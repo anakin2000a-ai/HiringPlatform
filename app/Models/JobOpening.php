@@ -48,6 +48,11 @@ class JobOpening extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function applications(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Application::class);
+    }
+
     public function isDraft(): bool
     {
         return $this->status === 'draft';

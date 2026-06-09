@@ -37,4 +37,9 @@ class WorkflowStage extends Model
     {
         return $this->belongsTo(HiringWorkflow::class, 'hiring_workflow_id');
     }
+
+    public function currentApplications(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Application::class, 'current_stage_id');
+    }
 }

@@ -4,6 +4,8 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\StoreController;
 use App\Http\Controllers\Api\V1\UserController;
+use App\Http\Controllers\Api\V1\ApplicationController;
+use App\Http\Controllers\Api\V1\JobOpeningApplicationController;
 use App\Http\Controllers\Api\V1\JobOpeningController;
 use App\Http\Controllers\Api\V1\WorkflowController;
 use App\Http\Controllers\Api\V1\WorkflowStageController;
@@ -13,6 +15,9 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
     Route::get('/health', [HealthController::class, 'index'])->name('health');
+
+    // Phase 5: Public apply route — no auth required
+    Route::post('stores/{store}/job-openings/{jobOpening}/apply', [JobOpeningApplicationController::class, 'apply']);
 
     Route::prefix('auth')->name('auth.')->group(function (): void {
         Route::post('/login', [AuthController::class, 'login'])->name('login');
@@ -62,7 +67,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::delete('stores/{store}/job-openings/{jobOpening}', [JobOpeningController::class, 'destroy']);
             Route::post('stores/{store}/job-openings/{jobOpening}/publish', [JobOpeningController::class, 'publish']);
             Route::post('stores/{store}/job-openings/{jobOpening}/close', [JobOpeningController::class, 'close']);
-            // Phase 5: Route::apiResource('stores/{store}/applications', ApplicationController::class);
+            // Phase 5: Application management (authenticated + store-scoped)
+            Route::get('stores/{store}/applications', [ApplicationController::class, 'index']);
+            Route::get('stores/{store}/applications/{application}', [ApplicationController::class, 'show']);
+            Route::patch('stores/{store}/applications/{application}', [ApplicationController::class, 'update']);
             // Phase 7: Route::apiResource('stores/{store}/questionnaires', QuestionnaireTemplateController::class);
             // Phase 8: Route::apiResource('stores/{store}/documents', DocumentTemplateController::class);
             // Phase 9: Route::apiResource('stores/{store}/automation-rules', AutomationRuleController::class);
