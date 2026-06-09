@@ -49,6 +49,11 @@ class Application extends Model
         return $this->belongsTo(WorkflowStage::class, 'current_stage_id');
     }
 
+    public function answers(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ApplicantAnswer::class);
+    }
+
     public function stageTransitions(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(ApplicationStageTransition::class)->orderBy('transitioned_at');

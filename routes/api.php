@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\ApplicantAnswerController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\StoreController;
@@ -7,6 +8,9 @@ use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\ApplicationController;
 use App\Http\Controllers\Api\V1\JobOpeningApplicationController;
 use App\Http\Controllers\Api\V1\JobOpeningController;
+use App\Http\Controllers\Api\V1\QuestionnaireQuestionController;
+use App\Http\Controllers\Api\V1\QuestionnaireTemplateController;
+use App\Http\Controllers\Api\V1\StageQuestionnaireAssignmentController;
 use App\Http\Controllers\Api\V1\WorkflowController;
 use App\Http\Controllers\Api\V1\WorkflowStageController;
 use App\Http\Controllers\Api\V1\WorkflowStageTransitionController;
@@ -67,14 +71,34 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::delete('stores/{store}/job-openings/{jobOpening}', [JobOpeningController::class, 'destroy']);
             Route::post('stores/{store}/job-openings/{jobOpening}/publish', [JobOpeningController::class, 'publish']);
             Route::post('stores/{store}/job-openings/{jobOpening}/close', [JobOpeningController::class, 'close']);
+
             // Phase 5: Application management (authenticated + store-scoped)
             Route::get('stores/{store}/applications', [ApplicationController::class, 'index']);
             Route::get('stores/{store}/applications/{application}', [ApplicationController::class, 'show']);
             Route::patch('stores/{store}/applications/{application}', [ApplicationController::class, 'update']);
+
             // Phase 6: Manual stage movement and activity history
             Route::post('stores/{store}/applications/{application}/move-stage', [ApplicationController::class, 'moveStage']);
             Route::get('stores/{store}/applications/{application}/activities', [ApplicationController::class, 'activities']);
-            // Phase 7: Route::apiResource('stores/{store}/questionnaires', QuestionnaireTemplateController::class);
+
+            // Phase 7: Questionnaire templates and questions
+            Route::get('stores/{store}/questionnaires', [QuestionnaireTemplateController::class, 'index']);
+            Route::post('stores/{store}/questionnaires', [QuestionnaireTemplateController::class, 'store']);
+            Route::get('stores/{store}/questionnaires/{questionnaire}', [QuestionnaireTemplateController::class, 'show']);
+            Route::patch('stores/{store}/questionnaires/{questionnaire}', [QuestionnaireTemplateController::class, 'update']);
+            Route::delete('stores/{store}/questionnaires/{questionnaire}', [QuestionnaireTemplateController::class, 'destroy']);
+
+            Route::get('stores/{store}/questionnaires/{questionnaire}/questions', [QuestionnaireQuestionController::class, 'index']);
+            Route::post('stores/{store}/questionnaires/{questionnaire}/questions', [QuestionnaireQuestionController::class, 'store']);
+            Route::patch('stores/{store}/questionnaires/{questionnaire}/questions/{question}', [QuestionnaireQuestionController::class, 'update']);
+            Route::delete('stores/{store}/questionnaires/{questionnaire}/questions/{question}', [QuestionnaireQuestionController::class, 'destroy']);
+
+            // Phase 7: Stage questionnaire assignment
+            Route::post('stores/{store}/workflows/{workflow}/stages/{stage}/questionnaires', [StageQuestionnaireAssignmentController::class, 'store']);
+
+            // Phase 7: Applicant answers
+            Route::post('stores/{store}/applications/{application}/answers', [ApplicantAnswerController::class, 'store']);
+
             // Phase 8: Route::apiResource('stores/{store}/documents', DocumentTemplateController::class);
             // Phase 9: Route::apiResource('stores/{store}/automation-rules', AutomationRuleController::class);
         });

@@ -42,4 +42,9 @@ class WorkflowStage extends Model
     {
         return $this->hasMany(Application::class, 'current_stage_id');
     }
+
+    public function questionnaireAssignments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(StageQuestionnaireAssignment::class);
+    }
 }
