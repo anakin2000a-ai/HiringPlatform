@@ -4,6 +4,9 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\StoreController;
 use App\Http\Controllers\Api\V1\UserController;
+use App\Http\Controllers\Api\V1\WorkflowController;
+use App\Http\Controllers\Api\V1\WorkflowStageController;
+use App\Http\Controllers\Api\V1\WorkflowStageTransitionController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
@@ -33,8 +36,23 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::patch('stores/{store}', [StoreController::class, 'update']);
             Route::delete('stores/{store}', [StoreController::class, 'destroy']);
 
-            // Nested store resources — added per phase
-            // Phase 3: Route::apiResource('stores/{store}/workflows', WorkflowController::class);
+            // Phase 3: Workflow configuration
+            Route::get('stores/{store}/workflows', [WorkflowController::class, 'index']);
+            Route::post('stores/{store}/workflows', [WorkflowController::class, 'store']);
+            Route::get('stores/{store}/workflows/{workflow}', [WorkflowController::class, 'show']);
+            Route::patch('stores/{store}/workflows/{workflow}', [WorkflowController::class, 'update']);
+            Route::delete('stores/{store}/workflows/{workflow}', [WorkflowController::class, 'destroy']);
+
+            Route::get('stores/{store}/workflows/{workflow}/stages', [WorkflowStageController::class, 'index']);
+            Route::post('stores/{store}/workflows/{workflow}/stages', [WorkflowStageController::class, 'store']);
+            Route::patch('stores/{store}/workflows/{workflow}/stages/{stage}', [WorkflowStageController::class, 'update']);
+            Route::delete('stores/{store}/workflows/{workflow}/stages/{stage}', [WorkflowStageController::class, 'destroy']);
+
+            Route::get('stores/{store}/workflows/{workflow}/transitions', [WorkflowStageTransitionController::class, 'index']);
+            Route::post('stores/{store}/workflows/{workflow}/transitions', [WorkflowStageTransitionController::class, 'store']);
+            Route::patch('stores/{store}/workflows/{workflow}/transitions/{transition}', [WorkflowStageTransitionController::class, 'update']);
+            Route::delete('stores/{store}/workflows/{workflow}/transitions/{transition}', [WorkflowStageTransitionController::class, 'destroy']);
+
             // Phase 4: Route::apiResource('stores/{store}/job-openings', JobOpeningController::class);
             // Phase 5: Route::apiResource('stores/{store}/applications', ApplicationController::class);
             // Phase 7: Route::apiResource('stores/{store}/questionnaires', QuestionnaireTemplateController::class);

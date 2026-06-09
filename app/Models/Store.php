@@ -33,4 +33,9 @@ class Store extends Model
     {
         return $this->belongsToMany(User::class, 'user_store_access');
     }
+
+    public function hiringWorkflows(): HasMany
+    {
+        return $this->hasMany(HiringWorkflow::class);
+    }
 }
