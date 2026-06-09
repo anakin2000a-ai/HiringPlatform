@@ -71,6 +71,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::get('stores/{store}/applications', [ApplicationController::class, 'index']);
             Route::get('stores/{store}/applications/{application}', [ApplicationController::class, 'show']);
             Route::patch('stores/{store}/applications/{application}', [ApplicationController::class, 'update']);
+            // Phase 6: Manual stage movement and activity history
+            Route::post('stores/{store}/applications/{application}/move-stage', [ApplicationController::class, 'moveStage']);
+            Route::get('stores/{store}/applications/{application}/activities', [ApplicationController::class, 'activities']);
             // Phase 7: Route::apiResource('stores/{store}/questionnaires', QuestionnaireTemplateController::class);
             // Phase 8: Route::apiResource('stores/{store}/documents', DocumentTemplateController::class);
             // Phase 9: Route::apiResource('stores/{store}/automation-rules', AutomationRuleController::class);

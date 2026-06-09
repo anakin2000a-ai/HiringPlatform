@@ -48,4 +48,14 @@ class Application extends Model
     {
         return $this->belongsTo(WorkflowStage::class, 'current_stage_id');
     }
+
+    public function stageTransitions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ApplicationStageTransition::class)->orderBy('transitioned_at');
+    }
+
+    public function activities(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(WorkflowActivity::class)->orderByDesc('created_at');
+    }
 }
