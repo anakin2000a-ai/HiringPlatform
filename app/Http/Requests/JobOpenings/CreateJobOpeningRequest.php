@@ -1,0 +1,50 @@
+<?php
+
+namespace App\Http\Requests\JobOpenings;
+
+use App\Models\HiringWorkflow;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Foundation\Http\FormRequest;
+
+class CreateJobOpeningRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'hiring_workflow_id' => ['required', 'integer', 'exists:hiring_workflows,id'],
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['sometimes', 'nullable', 'string'],
+            'employment_type' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'openings_count' => ['sometimes', 'integer', 'min:1'],
+        ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $v): void {
+            $workflowId = $this->input('hiring_workflow_id');
+
+            if (! $workflowId || $v->errors()->has('hiring_workflow_id')) {
+                return;
+            }
+
+            $store = $this->route('store');
+
+            $belongs = HiringWorkflow::where('id', $workflowId)
+                ->where('store_id', $store->id)
+                ->exists();
+
+            if (! $belongs) {
+                $v->errors()->add(
+                    'hiring_workflow_id',
+                    'The selected workflow does not belong to this store.'
+                );
+            }
+        });
+    }
+}

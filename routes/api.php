@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\StoreController;
 use App\Http\Controllers\Api\V1\UserController;
+use App\Http\Controllers\Api\V1\JobOpeningController;
 use App\Http\Controllers\Api\V1\WorkflowController;
 use App\Http\Controllers\Api\V1\WorkflowStageController;
 use App\Http\Controllers\Api\V1\WorkflowStageTransitionController;
@@ -53,7 +54,14 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::patch('stores/{store}/workflows/{workflow}/transitions/{transition}', [WorkflowStageTransitionController::class, 'update']);
             Route::delete('stores/{store}/workflows/{workflow}/transitions/{transition}', [WorkflowStageTransitionController::class, 'destroy']);
 
-            // Phase 4: Route::apiResource('stores/{store}/job-openings', JobOpeningController::class);
+            // Phase 4: Job Openings
+            Route::get('stores/{store}/job-openings', [JobOpeningController::class, 'index']);
+            Route::post('stores/{store}/job-openings', [JobOpeningController::class, 'store']);
+            Route::get('stores/{store}/job-openings/{jobOpening}', [JobOpeningController::class, 'show']);
+            Route::patch('stores/{store}/job-openings/{jobOpening}', [JobOpeningController::class, 'update']);
+            Route::delete('stores/{store}/job-openings/{jobOpening}', [JobOpeningController::class, 'destroy']);
+            Route::post('stores/{store}/job-openings/{jobOpening}/publish', [JobOpeningController::class, 'publish']);
+            Route::post('stores/{store}/job-openings/{jobOpening}/close', [JobOpeningController::class, 'close']);
             // Phase 5: Route::apiResource('stores/{store}/applications', ApplicationController::class);
             // Phase 7: Route::apiResource('stores/{store}/questionnaires', QuestionnaireTemplateController::class);
             // Phase 8: Route::apiResource('stores/{store}/documents', DocumentTemplateController::class);

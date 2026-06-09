@@ -62,4 +62,9 @@ class HiringWorkflow extends Model
     {
         return $this->hasOne(WorkflowStage::class, 'hiring_workflow_id')->where('is_initial', true);
     }
+
+    public function jobOpenings(): HasMany
+    {
+        return $this->hasMany(JobOpening::class);
+    }
 }

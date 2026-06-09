@@ -38,4 +38,9 @@ class Store extends Model
     {
         return $this->hasMany(HiringWorkflow::class);
     }
+
+    public function jobOpenings(): HasMany
+    {
+        return $this->hasMany(JobOpening::class);
+    }
 }
