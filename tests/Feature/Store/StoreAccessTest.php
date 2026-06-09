@@ -14,45 +14,110 @@ class StoreAccessTest extends TestCase
     use RefreshDatabase;
 
     // -----------------------------------------------------------------------
-    // Slug routing
+    // ID-based routing
     // -----------------------------------------------------------------------
 
-    public function test_store_is_resolved_by_slug(): void
+    public function test_store_is_resolved_by_id(): void
     {
         $franchise = FranchiseAccount::factory()->create();
-        $store = Store::factory()->for($franchise)->create(['name' => 'Downtown Branch']);
+        $store = Store::factory()->for($franchise)->create(['store_name' => 'Downtown Branch']);
         $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
 
         $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->slug}")
+            ->getJson("/api/v1/stores/{$store->id}")
             ->assertOk()
-            ->assertJsonPath('data.slug', $store->slug)
-            ->assertJsonPath('data.name', 'Downtown Branch');
+            ->assertJsonPath('data.id', $store->id)
+            ->assertJsonPath('data.store_name', 'Downtown Branch');
     }
 
-    public function test_unknown_slug_returns_404(): void
+    public function test_unknown_id_returns_404(): void
     {
         $franchise = FranchiseAccount::factory()->create();
         $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
 
         $this->actingAs($admin)
-            ->getJson('/api/v1/stores/slug-does-not-exist')
+            ->getJson('/api/v1/stores/99999')
             ->assertNotFound();
     }
 
     // -----------------------------------------------------------------------
-    // Franchise admin — full franchise scope
+    // EnsureStoreAccess middleware
     // -----------------------------------------------------------------------
 
-    public function test_franchise_admin_can_list_all_stores_in_their_franchise(): void
+    public function test_middleware_allows_franchise_admin_to_access_own_franchise_store(): void
     {
         $franchise = FranchiseAccount::factory()->create();
-        Store::factory()->for($franchise)->count(3)->create();
-
-        $otherFranchise = FranchiseAccount::factory()->create();
-        Store::factory()->for($otherFranchise)->count(2)->create();
-
+        $store = Store::factory()->for($franchise)->create();
         $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+
+        $this->actingAs($admin)
+            ->getJson("/api/v1/stores/{$store->id}")
+            ->assertOk();
+    }
+
+    public function test_middleware_blocks_franchise_admin_from_another_franchise_store(): void
+    {
+        $franchiseA = FranchiseAccount::factory()->create();
+        $franchiseB = FranchiseAccount::factory()->create();
+        $storeB = Store::factory()->for($franchiseB)->create();
+        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchiseA->id]);
+
+        $this->actingAs($admin)
+            ->getJson("/api/v1/stores/{$storeB->id}")
+            ->assertForbidden();
+    }
+
+    public function test_middleware_allows_store_manager_to_access_assigned_store(): void
+    {
+        $franchise = FranchiseAccount::factory()->create();
+        $store = Store::factory()->for($franchise)->create();
+        $manager = User::factory()->storeManager()->create(['franchise_account_id' => $franchise->id]);
+        UserStoreAccess::create(['user_id' => $manager->id, 'store_id' => $store->id]);
+
+        $this->actingAs($manager)
+            ->getJson("/api/v1/stores/{$store->id}")
+            ->assertOk();
+    }
+
+    public function test_middleware_blocks_store_manager_from_unassigned_store(): void
+    {
+        $franchise = FranchiseAccount::factory()->create();
+        $store = Store::factory()->for($franchise)->create();
+        $manager = User::factory()->storeManager()->create(['franchise_account_id' => $franchise->id]);
+        // No UserStoreAccess row created
+
+        $this->actingAs($manager)
+            ->getJson("/api/v1/stores/{$store->id}")
+            ->assertForbidden();
+    }
+
+    public function test_middleware_blocks_access_to_store_from_another_franchise(): void
+    {
+        $franchiseA = FranchiseAccount::factory()->create();
+        $franchiseB = FranchiseAccount::factory()->create();
+        $storeB = Store::factory()->for($franchiseB)->create();
+        $assignedStoreA = Store::factory()->for($franchiseA)->create();
+
+        $manager = User::factory()->storeManager()->create(['franchise_account_id' => $franchiseA->id]);
+        UserStoreAccess::create(['user_id' => $manager->id, 'store_id' => $assignedStoreA->id]);
+
+        $this->actingAs($manager)
+            ->getJson("/api/v1/stores/{$storeB->id}")
+            ->assertForbidden();
+    }
+
+    // -----------------------------------------------------------------------
+    // Index — result filtering (no EnsureStoreAccess, filtered by service)
+    // -----------------------------------------------------------------------
+
+    public function test_franchise_admin_sees_only_own_franchise_stores_in_list(): void
+    {
+        $franchiseA = FranchiseAccount::factory()->create();
+        $franchiseB = FranchiseAccount::factory()->create();
+        Store::factory()->for($franchiseA)->count(3)->create();
+        Store::factory()->for($franchiseB)->count(2)->create();
+
+        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchiseA->id]);
 
         $response = $this->actingAs($admin)->getJson('/api/v1/stores');
 
@@ -60,25 +125,7 @@ class StoreAccessTest extends TestCase
         $this->assertCount(3, $response->json('data.data'));
     }
 
-    public function test_franchise_admin_cannot_see_stores_from_another_franchise(): void
-    {
-        $franchiseA = FranchiseAccount::factory()->create();
-        $franchiseB = FranchiseAccount::factory()->create();
-
-        $storeB = Store::factory()->for($franchiseB)->create();
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchiseA->id]);
-
-        // Direct access by slug must be forbidden
-        $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$storeB->slug}")
-            ->assertForbidden();
-    }
-
-    // -----------------------------------------------------------------------
-    // Store-scoped user — only sees assigned stores
-    // -----------------------------------------------------------------------
-
-    public function test_store_manager_only_sees_assigned_stores(): void
+    public function test_store_manager_sees_only_assigned_stores_in_list(): void
     {
         $franchise = FranchiseAccount::factory()->create();
         $assignedStore = Store::factory()->for($franchise)->create();
@@ -90,37 +137,9 @@ class StoreAccessTest extends TestCase
         $response = $this->actingAs($manager)->getJson('/api/v1/stores');
 
         $response->assertOk();
-        $slugs = collect($response->json('data.data'))->pluck('slug');
-        $this->assertTrue($slugs->contains($assignedStore->slug));
-        $this->assertFalse($slugs->contains($otherStore->slug));
-    }
-
-    public function test_store_manager_cannot_access_unassigned_store_by_slug(): void
-    {
-        $franchise = FranchiseAccount::factory()->create();
-        $unassignedStore = Store::factory()->for($franchise)->create();
-
-        $manager = User::factory()->storeManager()->create(['franchise_account_id' => $franchise->id]);
-
-        $this->actingAs($manager)
-            ->getJson("/api/v1/stores/{$unassignedStore->slug}")
-            ->assertForbidden();
-    }
-
-    public function test_user_cannot_access_store_from_another_franchise_by_slug(): void
-    {
-        $franchiseA = FranchiseAccount::factory()->create();
-        $franchiseB = FranchiseAccount::factory()->create();
-
-        $storeB = Store::factory()->for($franchiseB)->create();
-        $assignedStoreA = Store::factory()->for($franchiseA)->create();
-
-        $manager = User::factory()->storeManager()->create(['franchise_account_id' => $franchiseA->id]);
-        UserStoreAccess::create(['user_id' => $manager->id, 'store_id' => $assignedStoreA->id]);
-
-        $this->actingAs($manager)
-            ->getJson("/api/v1/stores/{$storeB->slug}")
-            ->assertForbidden();
+        $ids = collect($response->json('data.data'))->pluck('id');
+        $this->assertTrue($ids->contains($assignedStore->id));
+        $this->assertFalse($ids->contains($otherStore->id));
     }
 
     // -----------------------------------------------------------------------

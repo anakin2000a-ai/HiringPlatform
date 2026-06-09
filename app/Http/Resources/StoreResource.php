@@ -11,15 +11,7 @@ class StoreResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'name' => $this->name,
-            'slug' => $this->slug,
-            'code' => $this->code,
-            'address' => $this->address,
-            'city' => $this->city,
-            'state' => $this->state,
-            'country' => $this->country,
-            'timezone' => $this->timezone,
-            'status' => $this->status,
+            'store_name' => $this->store_name,
             'franchise_account' => $this->whenLoaded('franchiseAccount', fn () => [
                 'id' => $this->franchiseAccount->id,
                 'name' => $this->franchiseAccount->name,

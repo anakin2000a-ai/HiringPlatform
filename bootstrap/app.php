@@ -13,7 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'store.access' => \App\Http\Middleware\EnsureStoreAccess::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Always render JSON for API routes

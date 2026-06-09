@@ -12,13 +12,14 @@ use App\Models\UserStoreAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 
 class UserController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        Gate::authorize('viewAny', User::class);
+        if (!$request->user()->isFranchiseAdmin()) {
+            return ApiResponse::forbidden('Only franchise admins can list users');
+        }
 
         $users = User::query()
             ->where('franchise_account_id', $request->user()->franchise_account_id)
@@ -32,7 +33,9 @@ class UserController extends Controller
 
     public function store(CreateUserRequest $request): JsonResponse
     {
-        Gate::authorize('create', User::class);
+        if (!$request->user()->isFranchiseAdmin()) {
+            return ApiResponse::forbidden('Only franchise admins can create users');
+        }
 
         $user = DB::transaction(function () use ($request): User {
             $user = User::create([
@@ -45,7 +48,6 @@ class UserController extends Controller
             ]);
 
             if ($request->filled('store_ids')) {
-                // Validate all stores belong to the same franchise before assigning
                 $franchiseStoreIds = Store::where('franchise_account_id', $request->user()->franchise_account_id)
                     ->whereIn('id', $request->store_ids)
                     ->pluck('id');
@@ -61,9 +63,15 @@ class UserController extends Controller
         return ApiResponse::created(new UserResource($user), 'User created');
     }
 
-    public function show(User $user): JsonResponse
+    public function show(Request $request, User $user): JsonResponse
     {
-        Gate::authorize('update', $user); // reuse update ability for viewing a specific user
+        if (!$request->user()->isFranchiseAdmin()) {
+            return ApiResponse::forbidden('Only franchise admins can view user details');
+        }
+
+        if ($request->user()->franchise_account_id !== $user->franchise_account_id) {
+            return ApiResponse::forbidden('Cannot view a user from another franchise');
+        }
 
         return ApiResponse::success(new UserResource($user));
     }

@@ -23,17 +23,23 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         // Users
         Route::apiResource('users', UserController::class)->only(['index', 'store', 'show']);
 
-        // Stores (resolved by slug via Store::getRouteKeyName())
-        Route::apiResource('stores', StoreController::class);
+        // Stores — collection routes (no store model in URL)
+        Route::get('stores', [StoreController::class, 'index']);
+        Route::post('stores', [StoreController::class, 'store']);
 
-        // Nested store resources — added per phase
-        Route::prefix('stores/{store:slug}')->group(function (): void {
-            // Phase 3: workflows
-            // Phase 4: job-openings
-            // Phase 5: applications
-            // Phase 7: questionnaires
-            // Phase 8: documents
-            // Phase 9: automation-rules
+        // Store instance routes — EnsureStoreAccess verifies user can access {store}
+        Route::middleware('store.access')->group(function (): void {
+            Route::get('stores/{store}', [StoreController::class, 'show']);
+            Route::patch('stores/{store}', [StoreController::class, 'update']);
+            Route::delete('stores/{store}', [StoreController::class, 'destroy']);
+
+            // Nested store resources — added per phase
+            // Phase 3: Route::apiResource('stores/{store}/workflows', WorkflowController::class);
+            // Phase 4: Route::apiResource('stores/{store}/job-openings', JobOpeningController::class);
+            // Phase 5: Route::apiResource('stores/{store}/applications', ApplicationController::class);
+            // Phase 7: Route::apiResource('stores/{store}/questionnaires', QuestionnaireTemplateController::class);
+            // Phase 8: Route::apiResource('stores/{store}/documents', DocumentTemplateController::class);
+            // Phase 9: Route::apiResource('stores/{store}/automation-rules', AutomationRuleController::class);
         });
     });
 });
