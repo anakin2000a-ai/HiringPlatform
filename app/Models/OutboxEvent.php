@@ -15,14 +15,17 @@ class OutboxEvent extends Model
         'attempts',
         'published_at',
         'failed_at',
+        'available_at',
+        'last_error',
     ];
 
     protected function casts(): array
     {
         return [
-            'payload' => 'array',
+            'payload'      => 'array',
             'published_at' => 'datetime',
-            'failed_at' => 'datetime',
+            'failed_at'    => 'datetime',
+            'available_at' => 'datetime',
         ];
     }
 }

@@ -13,6 +13,7 @@ use App\Models\Store;
 use App\Models\WorkflowActivity;
 use App\Services\Applications\ApplicationService;
 use App\Services\Applications\ApplicationStageService;
+use App\Services\Automation\AutomationRuleEngine;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -21,6 +22,7 @@ class ApplicationController extends Controller
     public function __construct(
         private readonly ApplicationService $applicationService,
         private readonly ApplicationStageService $stageService,
+        private readonly AutomationRuleEngine $automationEngine,
     ) {}
 
     public function index(Request $request, Store $store): JsonResponse
@@ -88,6 +90,8 @@ class ApplicationController extends Controller
             $request->input('reason'),
             $request->user(),
         );
+
+        $this->automationEngine->evaluate('stage_entered', $application);
 
         return ApiResponse::success(
             new ApplicationResource($application)

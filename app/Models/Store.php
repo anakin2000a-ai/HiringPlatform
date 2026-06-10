@@ -17,6 +17,7 @@ class Store extends Model
     protected $fillable = [
         'franchise_account_id',
         'store_name',
+        'status',
     ];
 
     public function franchiseAccount(): BelongsTo

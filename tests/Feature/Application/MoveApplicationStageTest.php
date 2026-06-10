@@ -15,6 +15,7 @@ use App\Models\WorkflowActivity;
 use App\Models\WorkflowStage;
 use App\Models\WorkflowStageTransition;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class MoveApplicationStageTest extends TestCase
@@ -200,6 +201,7 @@ class MoveApplicationStageTest extends TestCase
 
     public function test_moving_to_hired_terminal_stage_sets_status_and_hired_at(): void
     {
+        Queue::fake();
         [, $store, $admin, , , $screening, $hired, , , $application] = $this->makeSetup();
 
         $application->update(['current_stage_id' => $screening->id]);
@@ -216,6 +218,7 @@ class MoveApplicationStageTest extends TestCase
 
     public function test_moving_to_rejected_terminal_stage_sets_status_and_rejected_at(): void
     {
+        Queue::fake();
         [, $store, $admin, , , , , $rejected, , $application] = $this->makeSetup();
 
         $this->actingAs($admin)

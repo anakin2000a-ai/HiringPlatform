@@ -1,8 +1,13 @@
 <?php
 
 use App\Http\Controllers\Api\V1\ApplicantAnswerController;
+use App\Http\Controllers\Api\V1\ConfigurationCopyController;
+use App\Http\Controllers\Api\V1\ApplicantDocumentController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\AutomationRuleController;
+use App\Http\Controllers\Api\V1\DocumentTemplateController;
 use App\Http\Controllers\Api\V1\HealthController;
+use App\Http\Controllers\Api\V1\StageDocumentRequirementController;
 use App\Http\Controllers\Api\V1\StoreController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\ApplicationController;
@@ -39,6 +44,21 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         // Stores — collection routes (no store model in URL)
         Route::get('stores', [StoreController::class, 'index']);
         Route::post('stores', [StoreController::class, 'store']);
+
+        // Phase 8: Stage document requirements (store resolved through stage->workflow->store)
+        Route::get('workflow-stages/{stage}/document-requirements', [StageDocumentRequirementController::class, 'index']);
+        Route::post('workflow-stages/{stage}/document-requirements', [StageDocumentRequirementController::class, 'store']);
+        Route::get('stage-document-requirements/{requirement}', [StageDocumentRequirementController::class, 'show']);
+        Route::patch('stage-document-requirements/{requirement}', [StageDocumentRequirementController::class, 'update']);
+        Route::delete('stage-document-requirements/{requirement}', [StageDocumentRequirementController::class, 'destroy']);
+
+        // Phase 8: Applicant documents (store resolved through application->jobOpening->store)
+        Route::get('applications/{application}/documents', [ApplicantDocumentController::class, 'index']);
+        Route::post('applications/{application}/documents', [ApplicantDocumentController::class, 'store']);
+        Route::post('applicant-documents/{document}/submit', [ApplicantDocumentController::class, 'submit']);
+        Route::post('applicant-documents/{document}/sign', [ApplicantDocumentController::class, 'sign']);
+        Route::post('applicant-documents/{document}/approve', [ApplicantDocumentController::class, 'approve']);
+        Route::post('applicant-documents/{document}/reject', [ApplicantDocumentController::class, 'reject']);
 
         // Store instance routes — EnsureStoreAccess verifies user can access {store}
         Route::middleware('store.access')->group(function (): void {
@@ -99,8 +119,22 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             // Phase 7: Applicant answers
             Route::post('stores/{store}/applications/{application}/answers', [ApplicantAnswerController::class, 'store']);
 
-            // Phase 8: Route::apiResource('stores/{store}/documents', DocumentTemplateController::class);
-            // Phase 9: Route::apiResource('stores/{store}/automation-rules', AutomationRuleController::class);
+            // Phase 8: Document templates (store-scoped)
+            Route::get('stores/{store}/document-templates', [DocumentTemplateController::class, 'index']);
+            Route::post('stores/{store}/document-templates', [DocumentTemplateController::class, 'store']);
+            Route::get('stores/{store}/document-templates/{documentTemplate}', [DocumentTemplateController::class, 'show']);
+            Route::patch('stores/{store}/document-templates/{documentTemplate}', [DocumentTemplateController::class, 'update']);
+            Route::delete('stores/{store}/document-templates/{documentTemplate}', [DocumentTemplateController::class, 'destroy']);
+
+            // Phase 10: Configuration copy
+            Route::post('stores/{store}/copy-configuration', [ConfigurationCopyController::class, 'copy']);
+
+            // Phase 9: Automation rules (store-scoped index/store; show/update/destroy by rule id only)
+            Route::get('stores/{store}/automation-rules', [AutomationRuleController::class, 'index']);
+            Route::post('stores/{store}/automation-rules', [AutomationRuleController::class, 'store']);
+            Route::get('automation-rules/{automationRule}', [AutomationRuleController::class, 'show']);
+            Route::patch('automation-rules/{automationRule}', [AutomationRuleController::class, 'update']);
+            Route::delete('automation-rules/{automationRule}', [AutomationRuleController::class, 'destroy']);
         });
     });
 });

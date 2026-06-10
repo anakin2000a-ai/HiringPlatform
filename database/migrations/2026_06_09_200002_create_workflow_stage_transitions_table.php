@@ -20,7 +20,7 @@ return new class extends Migration
             $table->timestamps();
 
             // Note: unique enforced at app layer due to NULL handling in MySQL unique indexes
-            $table->index(['hiring_workflow_id', 'from_stage_id', 'to_stage_id']);
+            $table->index(['hiring_workflow_id', 'from_stage_id', 'to_stage_id'], 'wst_workflow_from_to_idx');
         });
     }
 

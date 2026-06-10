@@ -2,22 +2,32 @@
 
 namespace App\Services\Applications;
 
+use App\Jobs\PublishHiringOutboxEventJob;
 use App\Models\Application;
 use App\Models\ApplicationStageTransition;
 use App\Models\OutboxEvent;
 use App\Models\User;
 use App\Models\WorkflowStage;
 use App\Models\WorkflowStageTransition;
+use App\Services\HiringEvents\HiringEventFactory;
+use App\Services\HiringEvents\HiringOutboxService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class ApplicationStageService
 {
-    public function __construct(private readonly WorkflowActivityService $activityService) {}
+    public function __construct(
+        private readonly WorkflowActivityService $activityService,
+    ) {}
 
-    public function move(Application $application, int $toStageId, ?string $reason, User $actor): Application
-    {
+    public function move(
+        Application $application,
+        int $toStageId,
+        ?string $reason,
+        ?User $actor,
+        string $transitionType = 'manual',
+    ): Application {
         $application->load(['jobOpening.hiringWorkflow', 'currentStage']);
 
         $workflow = $application->jobOpening->hiringWorkflow;
@@ -32,12 +42,13 @@ class ApplicationStageService
             ]);
         }
 
-        $fromStageId = $application->current_stage_id;
+        $fromStageId   = $application->current_stage_id;
+        $allowedColumn = $transitionType === 'automatic' ? 'is_automatic_allowed' : 'is_manual_allowed';
 
         $transition = WorkflowStageTransition::where('hiring_workflow_id', $workflow->id)
             ->where('from_stage_id', $fromStageId)
             ->where('to_stage_id', $toStageId)
-            ->where('is_manual_allowed', true)
+            ->where($allowedColumn, true)
             ->first();
 
         if ($transition === null) {
@@ -46,27 +57,29 @@ class ApplicationStageService
             ]);
         }
 
-        return DB::transaction(function () use ($application, $toStage, $fromStageId, $reason, $actor): Application {
+        return DB::transaction(function () use ($application, $toStage, $fromStageId, $reason, $actor, $transitionType): Application {
             $updates = ['current_stage_id' => $toStage->id];
 
             if ($toStage->is_terminal) {
                 if ($toStage->stage_type === 'hired' && $application->hired_at === null) {
-                    $updates['status'] = 'hired';
+                    $updates['status']   = 'hired';
                     $updates['hired_at'] = now();
                 } elseif ($toStage->stage_type === 'rejected' && $application->rejected_at === null) {
-                    $updates['status'] = 'rejected';
+                    $updates['status']      = 'rejected';
                     $updates['rejected_at'] = now();
                 }
             }
 
             $application->update($updates);
 
+            $actorType = $transitionType === 'automatic' ? 'automation' : 'user';
+
             ApplicationStageTransition::create([
                 'application_id'  => $application->id,
                 'from_stage_id'   => $fromStageId,
                 'to_stage_id'     => $toStage->id,
-                'changed_by'      => $actor->id,
-                'transition_type' => 'manual',
+                'changed_by'      => $actor?->id,
+                'transition_type' => $transitionType,
                 'reason'          => $reason,
                 'metadata'        => null,
                 'created_at'      => now(),
@@ -79,8 +92,8 @@ class ApplicationStageService
                 storeId: $storeId,
                 eventType: 'stage_moved',
                 workflowStageId: $toStage->id,
-                actorType: 'user',
-                actorId: $actor->id,
+                actorType: $actorType,
+                actorId: $actor?->id,
                 oldValue: ['stage_id' => $fromStageId],
                 newValue: ['stage_id' => $toStage->id, 'stage_name' => $toStage->name],
                 metadata: ['reason' => $reason],
@@ -91,17 +104,81 @@ class ApplicationStageService
                 'event_type' => 'hiring.application.stage_changed',
                 'subject'    => 'hiring.application.stage_changed',
                 'payload'    => [
-                    'application_id' => $application->id,
-                    'from_stage_id'  => $fromStageId,
-                    'to_stage_id'    => $toStage->id,
-                    'moved_by'       => $actor->id,
-                    'status'         => $application->status,
+                    'application_id'  => $application->id,
+                    'from_stage_id'   => $fromStageId,
+                    'to_stage_id'     => $toStage->id,
+                    'moved_by'        => $actor?->id,
+                    'transition_type' => $transitionType,
+                    'status'          => $application->status,
                 ],
                 'status'   => 'pending',
                 'attempts' => 0,
             ]);
 
+            // Emit a versioned business event when the application reaches a NEW terminal outcome.
+            // Duplicate guard: only emit if this move actually set the terminal timestamp.
+            if ($toStage->is_terminal && isset($updates[$toStage->stage_type . '_at'])) {
+                $application->loadMissing(['applicant', 'jobOpening.store']);
+
+                $decision  = $toStage->stage_type; // 'hired' or 'rejected'
+                $applicant = $application->applicant;
+                $job       = $application->jobOpening;
+                $store     = $job?->store;
+                $decidedAt = $application->{"${decision}_at"} ?? now();
+
+                $subject = match ($decision) {
+                    'hired'    => 'hiring.v1.application.hired',
+                    'rejected' => 'hiring.v1.application.rejected',
+                    default    => null,
+                };
+
+                if ($subject !== null) {
+                    $applicantName = $applicant
+                        ? trim(($applicant->first_name ?? '') . ' ' . ($applicant->last_name ?? ''))
+                        : null;
+
+                    $data = [
+                        'application_id'       => $application->id,
+                        'applicant_id'         => $application->applicant_id,
+                        'applicant_name'       => $applicantName ?: null,
+                        'applicant_email'      => $applicant?->email,
+                        'applicant_phone'      => $applicant?->phone,
+                        'job_opening_id'       => $application->job_opening_id,
+                        'job_title'            => $job?->title,
+                        'store_id'             => $job?->store_id,
+                        'store_name'           => $store?->store_name,
+                        'franchise_account_id' => $store?->franchise_account_id,
+                        'previous_stage_id'    => $fromStageId,
+                        'current_stage_id'     => $toStage->id,
+                        'current_stage_name'   => $toStage->name,
+                        'status'               => $decision,
+                        'decision'             => $decision,
+                        'decided_at'           => $decidedAt instanceof \DateTimeInterface
+                            ? $decidedAt->toIso8601String()
+                            : (string) $decidedAt,
+                        'decided_by_user_id'   => $actor?->id,
+                        'applicant'            => $applicant ? [
+                            'first_name' => $applicant->first_name,
+                            'last_name'  => $applicant->last_name,
+                            'email'      => $applicant->email,
+                            'phone'      => $applicant->phone,
+                        ] : null,
+                    ];
+
+                    $this->recordEvent($subject, $data);
+                }
+            }
+
             return $application->fresh(['applicant', 'jobOpening', 'currentStage']);
         });
+    }
+
+    private function recordEvent(string $subject, array $data): void
+    {
+        $factory  = app(HiringEventFactory::class);
+        $outbox   = app(HiringOutboxService::class);
+        $envelope = $factory->make($subject, $data, null);
+        $row      = $outbox->record($subject, $envelope);
+        DB::afterCommit(fn () => PublishHiringOutboxEventJob::dispatch((string) $row->id));
     }
 }

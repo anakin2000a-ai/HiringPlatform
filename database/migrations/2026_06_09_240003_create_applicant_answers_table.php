@@ -17,7 +17,7 @@ return new class extends Migration
             $table->timestamp('answered_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['application_id', 'questionnaire_question_id']);
+            $table->unique(['application_id', 'questionnaire_question_id'], 'aa_app_question_unique');
             $table->index('application_id');
         });
     }

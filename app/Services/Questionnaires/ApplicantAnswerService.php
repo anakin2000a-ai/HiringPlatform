@@ -10,6 +10,7 @@ use App\Models\QuestionnaireTemplate;
 use App\Models\Store;
 use App\Models\User;
 use App\Services\Applications\WorkflowActivityService;
+use App\Services\Automation\AutomationRuleEngine;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -17,7 +18,10 @@ use Illuminate\Validation\ValidationException;
 
 class ApplicantAnswerService
 {
-    public function __construct(private readonly WorkflowActivityService $activityService) {}
+    public function __construct(
+        private readonly WorkflowActivityService $activityService,
+        private readonly AutomationRuleEngine $automationEngine,
+    ) {}
 
     public function submit(Application $application, Store $store, array $data, User $actor): Collection
     {
@@ -57,7 +61,7 @@ class ApplicantAnswerService
             }
         }
 
-        return DB::transaction(function () use ($application, $store, $questionnaire, $data, $actor): Collection {
+        $savedAnswers = DB::transaction(function () use ($application, $store, $questionnaire, $data, $actor): Collection {
             $savedAnswers = collect();
 
             foreach ($data['answers'] as $answerData) {
@@ -105,5 +109,9 @@ class ApplicantAnswerService
 
             return $savedAnswers;
         });
+
+        $this->automationEngine->evaluate('answer_submitted', $application);
+
+        return $savedAnswers;
     }
 }

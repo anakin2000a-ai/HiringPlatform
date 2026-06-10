@@ -63,4 +63,9 @@ class Application extends Model
     {
         return $this->hasMany(WorkflowActivity::class)->orderByDesc('created_at');
     }
+
+    public function applicantDocuments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ApplicantDocument::class);
+    }
 }

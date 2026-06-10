@@ -21,7 +21,7 @@ return new class extends Migration
             $table->unsignedSmallInteger('position');
             $table->timestamps();
 
-            $table->unique(['questionnaire_template_id', 'question_key']);
+            $table->unique(['questionnaire_template_id', 'question_key'], 'qq_template_question_key_unique');
             $table->index(['questionnaire_template_id', 'position']);
         });
     }

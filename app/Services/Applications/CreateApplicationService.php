@@ -4,12 +4,16 @@ namespace App\Services\Applications;
 
 use App\Models\Application;
 use App\Models\JobOpening;
+use App\Services\Automation\AutomationRuleEngine;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class CreateApplicationService
 {
-    public function __construct(private readonly ApplicantService $applicantService) {}
+    public function __construct(
+        private readonly ApplicantService $applicantService,
+        private readonly AutomationRuleEngine $automationEngine,
+    ) {}
 
     public function create(JobOpening $jobOpening, array $applicantData): Application
     {
@@ -29,7 +33,7 @@ class CreateApplicationService
             ]);
         }
 
-        return DB::transaction(function () use ($jobOpening, $applicantData, $initialStage): Application {
+        $application = DB::transaction(function () use ($jobOpening, $applicantData, $initialStage): Application {
             $applicant = $this->applicantService->findOrCreate($applicantData);
 
             $alreadyApplied = Application::where('applicant_id', $applicant->id)
@@ -43,14 +47,18 @@ class CreateApplicationService
             }
 
             $application = Application::create([
-                'applicant_id' => $applicant->id,
-                'job_opening_id' => $jobOpening->id,
+                'applicant_id'     => $applicant->id,
+                'job_opening_id'   => $jobOpening->id,
                 'current_stage_id' => $initialStage->id,
-                'status' => 'active',
-                'applied_at' => now(),
+                'status'           => 'active',
+                'applied_at'       => now(),
             ]);
 
             return $application->load(['applicant', 'jobOpening', 'currentStage']);
         });
+
+        $this->automationEngine->evaluate('application_created', $application);
+
+        return $application;
     }
 }

@@ -47,4 +47,9 @@ class WorkflowStage extends Model
     {
         return $this->hasMany(StageQuestionnaireAssignment::class);
     }
+
+    public function documentRequirements(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(StageDocumentRequirement::class);
+    }
 }
