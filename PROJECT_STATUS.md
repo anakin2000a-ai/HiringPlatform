@@ -48,6 +48,49 @@
 - `QuestionnaireService`, `QuestionnaireQuestionService`, `StageQuestionnaireAssignmentService`, `ApplicantAnswerService`
 - Outbox events written for `hiring.questionnaire.submitted`
 
+### Phase 11b — Outbound Hiring Events via NATS JetStream ✅
+
+Company-style outbound NATS publish implementation for terminal application outcomes.
+
+**Pattern ownership:**
+- `ApplicationStageService` owns `private recordEvent(string $subject, array $data): void` — builds the `HiringEventFactory` envelope, calls `HiringOutboxService::record()`, then schedules `DB::afterCommit(fn() => PublishHiringOutboxEventJob::dispatch((string) $row->id))`; `DB::afterCommit` lives here, not in the outbox service
+- `HiringEventFactory` — instance-based `make(string $type, array $data, ?Request $request = null, array $metaOverrides = []): array`; wraps any data array in a CloudEvents-shaped envelope; does not build model data
+- `HiringOutboxService` — only records `OutboxEvent` rows via `record(string $subject, array $payload): OutboxEvent`; no dispatch, no `DB::afterCommit`
+- `PublishHiringOutboxEventJob` — `$tries = 10`, non-readonly `string $outboxEventId`; increments `attempts`, calls `JetStreamPublisher::publish()`, sets `published_at`; `failed()` hook writes `last_error`; no try/catch in `handle()`
+- `JetStreamPublisher` — `publish(string $subject, array $payload): array`; validates `nats.jetstream.enabled`; checks subject against `nats.jetstream.subjects` allowlist; calls `$client->getApi()->getStream($streamName)->put($subject, $json)`; returns normalized ACK array
+- `ModelChangeSet` — ported for completeness under `App\Services\HiringEvents`
+
+**Outbound subjects emitted:**
+- `hiring.v1.application.hired` — when application moves to a `stage_type=hired` terminal stage for the first time
+- `hiring.v1.application.rejected` — when application moves to a `stage_type=rejected` terminal stage for the first time
+- Duplicate guard: event only emitted when `hired_at` / `rejected_at` was null before the move
+
+**Envelope shape (CloudEvents 1.0):**
+- Top-level: `specversion="1.0"`, `id` (ULID), `type`, `source="hiring-platform"`, `subject`, `time`, `datacontenttype="application/json"`, `data`, `meta`
+- No top-level `version` key
+- `meta` block: `correlation_id`, `causation_id`, `actor_user_id`, `actor_type`, `actor_ip`, `user_agent`
+
+**`data` payload fields:**
+`application_id`, `applicant_id`, `applicant_name`, `applicant_email`, `applicant_phone`, `job_opening_id`, `job_title`, `store_id`, `store_name` (from `stores.store_name`), `franchise_account_id`, `previous_stage_id`, `current_stage_id`, `current_stage_name`, `status`, `decision`, `decided_at`, `decided_by_user_id`, `applicant` (nested object with `first_name`, `last_name`, `email`, `phone`)
+
+**NATS config (`config/nats.php`):**
+- `nats.jetstream.stream` — env `NATS_HIRING_PLATFORM_STREAM`, default `HIRING_PLATFORM_EVENTS`
+- `nats.jetstream.subjects` — `['hiring.v1.>']`
+- `NATS_HIRING_STREAM` env key is not used anywhere
+- Inbound `nats.streams` config and `JetStreamConsumer` were not modified
+
+**Files added / changed:**
+- `app/Services/HiringEvents/HiringEventFactory.php` — rewritten (instance make())
+- `app/Services/HiringEvents/HiringOutboxService.php` — rewritten (record() only)
+- `app/Services/HiringEvents/ModelChangeSet.php` — new
+- `app/Jobs/PublishHiringOutboxEventJob.php` — rewritten (tries=10, string id, failed() hook)
+- `app/Services/Nats/JetStreamPublisher.php` — rewritten (getApi/getStream/put, array return)
+- `app/Services/Applications/ApplicationStageService.php` — added private recordEvent(), full data array
+- `config/nats.php` — removed outbound_stream/outbound_stream_durable/publish.allowed_subjects; added jetstream.stream and jetstream.subjects
+- `app/Services/Nats/JetStreamConsumer.php` — **unchanged**
+
+---
+
 ### Phase 11 — Event Integration / Outbox-Inbox / NATS Adapter ✅
 - `EventBusPublisher` interface with `LogEventBusPublisher` (default), `FakeEventBusPublisher` (tests), and `NatsEventBusPublisher` (stub)
 - `OutboxPublisherService` — fetches pending outbox events (respecting `available_at`), publishes via `EventBusPublisher`, marks `published`; on failure applies exponential back-off (1/5/15/60 min) up to `maxAttempts` then marks `failed`
@@ -163,11 +206,17 @@
 
 ## Test Suite
 
-- **Tests:** 411 passing
-- **Assertions:** 930 passing
+- **Tests:** 480 passing
+- **Assertions:** 1050 passing
 - **NatsClientTest:** 32 passing
 - **JetStreamConsumerTest:** 8 passing
 - **AssignmentEventTest:** 20 passing
+- **NatsAlignmentTest:** 10 passing (inbound + outbound alignment)
+- **ApplicationStageServiceOutboundTest:** 15 passing
+- **HiringEventFactoryTest:** 14 passing
+- **HiringOutboxServiceTest:** 17 passing (includes HiringOutbox filter matches)
+- **JetStreamPublisherTest:** 12 passing
+- **SafetyTest:** 11 passing
 - **Runner:** PHPUnit via `php artisan test`
 
 ---
@@ -206,6 +255,8 @@
 - **Configuration copy ID remapping** — source workflow, stage, questionnaire template, document template, and automation rule scope IDs are all remapped to newly created target IDs using in-memory maps built during the transaction; copied rows never reference source-store-owned IDs
 - **Configuration copy independence** — copied records are fully independent from the source store; modifying the target configuration does not affect the source
 - **Configuration copy automation edge case** — if `copy_automation_rules=true` and `copy_workflows=false`, only store-level rules (both `hiring_workflow_id` and `workflow_stage_id` null) are copied; workflow/stage-scoped rules are skipped and counted in `metadata.skipped.automation_rules`. On full-copy paths, all scoped IDs remap successfully. If a scoped rule were somehow not resolvable, the implementation falls back to null scope rather than failing.
+- **Outbound NATS publish pattern** — `ApplicationStageService::recordEvent()` owns `DB::afterCommit` and `PublishHiringOutboxEventJob` dispatch; `HiringOutboxService::record()` only persists; `HiringEventFactory::make()` only wraps; `JetStreamPublisher` uses `getApi()->getStream()->put()` (company-style); job uses `failed()` hook not try/catch; no `Auth` outbox table; `NATS_HIRING_PLATFORM_STREAM` used, not `NATS_HIRING_STREAM`
+- **CloudEvents envelope** — `specversion="1.0"`, ULID `id`, no top-level `version` key; `meta` block carries `correlation_id`, `actor_type`, `actor_user_id`, `actor_ip`, `user_agent`; `data` carries all decision fields including `decision`, `status`, `store_name` from `stores.store_name`, and nested `applicant` object
 - **NATS transport layer** — `JetStreamConsumer` is ported to company-style structure; it owns inline idempotency directly via `InboxEvent`; subject allowlist (`auth.v1.` prefix) and `$JS.ACK.` reply guard prevent phantom message processing; single `Client` instance reused for process lifetime; consumer objects cached per `stream|durable`
 - **NATS idempotency** — `JetStreamConsumer::handleMessage()` manages `InboxEvent` rows directly inside a `DB::transaction`; `status=processed` → ACK/skip; `status=parked` → ACK/skip; new events → insert then dispatch; `MAX_PROCESSING_ATTEMPTS=5` failures → `status=parked, failed_at=now()`; success → `status=processed, processed_at=now(), failed_at=null, last_error=null`
 - **NATS handler dispatch** — `EventRouter::resolve(string $subject): string` returns the handler class (or `NoOpHandler` for unknown subjects); handlers receive the inner `data` array extracted from the event, not the full raw payload; Shape A (`event_id/event_type/data`) and Shape B (`id/subject/payload`) both supported
