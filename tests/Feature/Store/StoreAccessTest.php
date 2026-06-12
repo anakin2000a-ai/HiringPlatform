@@ -21,7 +21,8 @@ class StoreAccessTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create(['store_name' => 'Downtown Branch']);
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $admin = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $store->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
 
         $this->actingAs($admin)
             ->getJson("/api/v1/stores/{$store->id}")
@@ -32,10 +33,9 @@ class StoreAccessTest extends TestCase
 
     public function test_unknown_id_returns_404(): void
     {
-        $franchise = FranchiseAccount::factory()->create();
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $user = User::factory()->create();
 
-        $this->actingAs($admin)
+        $this->actingAs($user)
             ->getJson('/api/v1/stores/99999')
             ->assertNotFound();
     }
@@ -48,7 +48,8 @@ class StoreAccessTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $admin = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $store->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
 
         $this->actingAs($admin)
             ->getJson("/api/v1/stores/{$store->id}")
@@ -59,8 +60,10 @@ class StoreAccessTest extends TestCase
     {
         $franchiseA = FranchiseAccount::factory()->create();
         $franchiseB = FranchiseAccount::factory()->create();
+        $storeA = Store::factory()->for($franchiseA)->create();
         $storeB = Store::factory()->for($franchiseB)->create();
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchiseA->id]);
+        $admin = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $storeA->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
 
         $this->actingAs($admin)
             ->getJson("/api/v1/stores/{$storeB->id}")
@@ -71,8 +74,8 @@ class StoreAccessTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
-        $manager = User::factory()->storeManager()->create(['franchise_account_id' => $franchise->id]);
-        UserStoreAccess::create(['user_id' => $manager->id, 'store_id' => $store->id]);
+        $manager = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $manager->id, 'store_id' => $store->id, 'role' => 'store_manager', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->actingAs($manager)
             ->getJson("/api/v1/stores/{$store->id}")
@@ -83,7 +86,7 @@ class StoreAccessTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
-        $manager = User::factory()->storeManager()->create(['franchise_account_id' => $franchise->id]);
+        $manager = User::factory()->create();
         // No UserStoreAccess row created
 
         $this->actingAs($manager)
@@ -98,8 +101,8 @@ class StoreAccessTest extends TestCase
         $storeB = Store::factory()->for($franchiseB)->create();
         $assignedStoreA = Store::factory()->for($franchiseA)->create();
 
-        $manager = User::factory()->storeManager()->create(['franchise_account_id' => $franchiseA->id]);
-        UserStoreAccess::create(['user_id' => $manager->id, 'store_id' => $assignedStoreA->id]);
+        $manager = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $manager->id, 'store_id' => $assignedStoreA->id, 'role' => 'store_manager', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->actingAs($manager)
             ->getJson("/api/v1/stores/{$storeB->id}")
@@ -114,10 +117,11 @@ class StoreAccessTest extends TestCase
     {
         $franchiseA = FranchiseAccount::factory()->create();
         $franchiseB = FranchiseAccount::factory()->create();
-        Store::factory()->for($franchiseA)->count(3)->create();
+        $storesA = Store::factory()->for($franchiseA)->count(3)->create();
         Store::factory()->for($franchiseB)->count(2)->create();
 
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchiseA->id]);
+        $admin = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $storesA->first()->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
 
         $response = $this->actingAs($admin)->getJson('/api/v1/stores');
 
@@ -131,8 +135,8 @@ class StoreAccessTest extends TestCase
         $assignedStore = Store::factory()->for($franchise)->create();
         $otherStore = Store::factory()->for($franchise)->create();
 
-        $manager = User::factory()->storeManager()->create(['franchise_account_id' => $franchise->id]);
-        UserStoreAccess::create(['user_id' => $manager->id, 'store_id' => $assignedStore->id]);
+        $manager = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $manager->id, 'store_id' => $assignedStore->id, 'role' => 'store_manager', 'access_scope' => 'store', 'status' => 'active']);
 
         $response = $this->actingAs($manager)->getJson('/api/v1/stores');
 

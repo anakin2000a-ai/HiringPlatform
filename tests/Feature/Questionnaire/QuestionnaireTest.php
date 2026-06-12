@@ -29,7 +29,8 @@ class QuestionnaireTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store     = Store::factory()->for($franchise)->create();
-        $admin     = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $admin     = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $store->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
 
         return [$franchise, $store, $admin];
     }
@@ -190,7 +191,7 @@ class QuestionnaireTest extends TestCase
     public function test_cannot_create_questionnaire_for_inaccessible_store(): void
     {
         [$franchise, $store] = $this->makeStore();
-        $manager = User::factory()->storeManager()->create(['franchise_account_id' => $franchise->id]);
+        $manager = User::factory()->create();
         // No UserStoreAccess
 
         $this->actingAs($manager)
@@ -201,8 +202,8 @@ class QuestionnaireTest extends TestCase
     public function test_recruiter_cannot_create_questionnaire(): void
     {
         [$franchise, $store] = $this->makeStore();
-        $recruiter = User::factory()->recruiter()->create(['franchise_account_id' => $franchise->id]);
-        UserStoreAccess::create(['user_id' => $recruiter->id, 'store_id' => $store->id]);
+        $recruiter = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $recruiter->id, 'store_id' => $store->id, 'role' => 'recruiter', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->actingAs($recruiter)
             ->postJson("/api/v1/stores/{$store->id}/questionnaires", ['name' => 'Q'])
@@ -294,7 +295,7 @@ class QuestionnaireTest extends TestCase
             ->getJson("/api/v1/stores/{$store->id}/questionnaires/{$questionnaire->id}/questions")
             ->assertOk();
 
-        $this->assertCount(2, $response->json('data'));
+        $this->assertCount(2, $response->json('data.data'));
     }
 
     public function test_can_update_questionnaire_question(): void
@@ -709,7 +710,7 @@ class QuestionnaireTest extends TestCase
         [$franchise, $store] = $this->makeStore();
         $questionnaire = $this->makeQuestionnaire($store);
         $question      = $this->makeQuestion($questionnaire);
-        $manager = User::factory()->storeManager()->create(['franchise_account_id' => $franchise->id]);
+        $manager = User::factory()->create();
         // No UserStoreAccess — all requests should be blocked by store.access middleware
 
         $id = $questionnaire->id;

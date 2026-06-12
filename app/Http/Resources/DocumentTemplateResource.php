@@ -17,6 +17,12 @@ class DocumentTemplateResource extends JsonResource
             'requires_signature' => $this->requires_signature,
             'description'        => $this->description,
             'created_by'         => $this->created_by,
+            'requirements'       => $this->whenLoaded('stageRequirements', fn () => $this->stageRequirements->map(fn ($r) => [
+                'id'                         => $r->id,
+                'workflow_stage_id'          => $r->workflow_stage_id,
+                'is_required'               => $r->is_required,
+                'due_days_after_stage_entry' => $r->due_days_after_stage_entry,
+            ])),
             'created_at'         => $this->created_at,
             'updated_at'         => $this->updated_at,
         ];

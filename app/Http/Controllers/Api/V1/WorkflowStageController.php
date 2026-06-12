@@ -10,23 +10,49 @@ use App\Http\Responses\ApiResponse;
 use App\Models\HiringWorkflow;
 use App\Models\Store;
 use App\Models\WorkflowStage;
+use App\Services\AccessControl\StoreAccessService;
 use App\Services\Workflows\WorkflowStageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class WorkflowStageController extends Controller
 {
-    public function __construct(private readonly WorkflowStageService $stageService) {}
+    public function __construct(
+        private readonly WorkflowStageService $stageService,
+        private readonly StoreAccessService $storeAccessService,
+    ) {}
 
-    public function index(Store $store, HiringWorkflow $workflow): JsonResponse
+    public function index(\Illuminate\Http\Request $request, Store $store, HiringWorkflow $workflow): JsonResponse
     {
         if (! $this->workflowBelongsToStore($workflow, $store)) {
             return ApiResponse::notFound('Workflow not found');
         }
 
-        $stages = $workflow->stages()->get();
+        $request->validate([
+            'per_page'    => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'stage_type'  => ['sometimes', 'string'],
+            'is_initial'  => ['sometimes', 'boolean'],
+            'is_terminal' => ['sometimes', 'boolean'],
+        ]);
 
-        return ApiResponse::success(WorkflowStageResource::collection($stages));
+        $query = $workflow->stages();
+
+        if ($request->filled('stage_type')) {
+            $query->where('stage_type', $request->input('stage_type'));
+        }
+        if ($request->has('is_initial')) {
+            $query->where('is_initial', $request->boolean('is_initial'));
+        }
+        if ($request->has('is_terminal')) {
+            $query->where('is_terminal', $request->boolean('is_terminal'));
+        }
+
+        $stages = $query->orderBy('position')->orderBy('id')
+            ->paginate($request->integer('per_page', 20));
+
+        return ApiResponse::success(
+            WorkflowStageResource::collection($stages)->response()->getData(true)
+        );
     }
 
     public function store(CreateWorkflowStageRequest $request, Store $store, HiringWorkflow $workflow): JsonResponse
@@ -35,7 +61,7 @@ class WorkflowStageController extends Controller
             return ApiResponse::notFound('Workflow not found');
         }
 
-        if (! $this->canManageWorkflows($request)) {
+        if (! $this->canManageWorkflows($request, $store)) {
             return ApiResponse::forbidden('Only franchise admins and store managers can manage workflow stages.');
         }
 
@@ -54,7 +80,7 @@ class WorkflowStageController extends Controller
             return ApiResponse::notFound('Stage not found');
         }
 
-        if (! $this->canManageWorkflows($request)) {
+        if (! $this->canManageWorkflows($request, $store)) {
             return ApiResponse::forbidden('Only franchise admins and store managers can manage workflow stages.');
         }
 
@@ -73,7 +99,7 @@ class WorkflowStageController extends Controller
             return ApiResponse::notFound('Stage not found');
         }
 
-        if (! $this->canManageWorkflows($request)) {
+        if (! $this->canManageWorkflows($request, $store)) {
             return ApiResponse::forbidden('Only franchise admins and store managers can manage workflow stages.');
         }
 
@@ -92,8 +118,12 @@ class WorkflowStageController extends Controller
         return $stage->hiring_workflow_id === $workflow->id;
     }
 
-    private function canManageWorkflows(Request $request): bool
+    private function canManageWorkflows(Request $request, Store $store): bool
     {
-        return in_array($request->user()->role, ['franchise_admin', 'store_manager'], true);
+        return in_array(
+            $this->storeAccessService->getUserRoleAtStore($request->user(), $store),
+            ['franchise_admin', 'store_manager'],
+            true
+        );
     }
 }

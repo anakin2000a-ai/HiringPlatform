@@ -18,9 +18,4 @@ class FranchiseAccount extends Model
     {
         return $this->hasMany(Store::class);
     }
-
-    public function users(): HasMany
-    {
-        return $this->hasMany(User::class);
-    }
 }

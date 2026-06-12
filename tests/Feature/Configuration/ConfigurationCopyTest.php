@@ -36,22 +36,24 @@ class ConfigurationCopyTest extends TestCase
         return Store::factory()->for($franchise)->create();
     }
 
-    private function makeAdmin(FranchiseAccount $franchise): User
+    private function makeAdmin(FranchiseAccount $franchise, Store $store): User
     {
-        return User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $admin = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $store->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
+        return $admin;
     }
 
     private function makeManager(Store $store): User
     {
-        $manager = User::factory()->create(['role' => 'store_manager']);
-        UserStoreAccess::create(['user_id' => $manager->id, 'store_id' => $store->id]);
+        $manager = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $manager->id, 'store_id' => $store->id, 'role' => 'store_manager', 'access_scope' => 'store', 'status' => 'active']);
         return $manager;
     }
 
     private function makeRecruiter(Store $store): User
     {
-        $recruiter = User::factory()->create(['role' => 'recruiter']);
-        UserStoreAccess::create(['user_id' => $recruiter->id, 'store_id' => $store->id]);
+        $recruiter = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $recruiter->id, 'store_id' => $store->id, 'role' => 'recruiter', 'access_scope' => 'store', 'status' => 'active']);
         return $recruiter;
     }
 
@@ -142,7 +144,7 @@ class ConfigurationCopyTest extends TestCase
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
         $target    = $this->makeStore($franchise);
-        $admin     = $this->makeAdmin($franchise);
+        $admin     = $this->makeAdmin($franchise, $source);
 
         $this->postCopy($admin, $source, ['target_store_id' => $target->id])
             ->assertCreated();
@@ -156,7 +158,7 @@ class ConfigurationCopyTest extends TestCase
         $manager   = $this->makeManager($source);
 
         // manager must also have access to target store
-        UserStoreAccess::create(['user_id' => $manager->id, 'store_id' => $target->id]);
+        UserStoreAccess::create(['user_id' => $manager->id, 'store_id' => $target->id, 'role' => 'store_manager', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->postCopy($manager, $source, ['target_store_id' => $target->id])
             ->assertCreated();
@@ -169,7 +171,7 @@ class ConfigurationCopyTest extends TestCase
         $target    = $this->makeStore($franchise);
         $recruiter = $this->makeRecruiter($source);
 
-        UserStoreAccess::create(['user_id' => $recruiter->id, 'store_id' => $target->id]);
+        UserStoreAccess::create(['user_id' => $recruiter->id, 'store_id' => $target->id, 'role' => 'recruiter', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->postCopy($recruiter, $source, ['target_store_id' => $target->id])
             ->assertForbidden();
@@ -180,10 +182,10 @@ class ConfigurationCopyTest extends TestCase
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
         $target    = $this->makeStore($franchise);
-        $outsider  = User::factory()->create(['role' => 'store_manager']);
+        $outsider  = User::factory()->create();
 
         // outsider only has access to target, not source
-        UserStoreAccess::create(['user_id' => $outsider->id, 'store_id' => $target->id]);
+        UserStoreAccess::create(['user_id' => $outsider->id, 'store_id' => $target->id, 'role' => 'store_manager', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->postCopy($outsider, $source, ['target_store_id' => $target->id])
             ->assertForbidden();
@@ -208,7 +210,7 @@ class ConfigurationCopyTest extends TestCase
     {
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
-        $admin     = $this->makeAdmin($franchise);
+        $admin     = $this->makeAdmin($franchise, $source);
 
         $this->postCopy($admin, $source, ['target_store_id' => $source->id])
             ->assertUnprocessable()
@@ -219,7 +221,7 @@ class ConfigurationCopyTest extends TestCase
     {
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
-        $admin     = $this->makeAdmin($franchise);
+        $admin     = $this->makeAdmin($franchise, $source);
 
         $this->postCopy($admin, $source, ['target_store_id' => 99999])
             ->assertUnprocessable()
@@ -231,7 +233,7 @@ class ConfigurationCopyTest extends TestCase
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
         $target    = $this->makeStore($franchise);
-        $admin     = $this->makeAdmin($franchise);
+        $admin     = $this->makeAdmin($franchise, $source);
 
         $this->postCopy($admin, $source, [
             'target_store_id'  => $target->id,
@@ -249,7 +251,7 @@ class ConfigurationCopyTest extends TestCase
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
         $target    = $this->makeStore($franchise);
-        $admin     = $this->makeAdmin($franchise);
+        $admin     = $this->makeAdmin($franchise, $source);
 
         HiringWorkflow::factory()->forStore($source)->create();
 
@@ -263,7 +265,7 @@ class ConfigurationCopyTest extends TestCase
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
         $target    = $this->makeStore($franchise);
-        $admin     = $this->makeAdmin($franchise);
+        $admin     = $this->makeAdmin($franchise, $source);
 
         $workflow = HiringWorkflow::factory()->forStore($source)->create();
         WorkflowStage::factory()->forWorkflow($workflow)->initial()->create(['name' => 'Stage1']);
@@ -280,7 +282,7 @@ class ConfigurationCopyTest extends TestCase
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
         $target    = $this->makeStore($franchise);
-        $admin     = $this->makeAdmin($franchise);
+        $admin     = $this->makeAdmin($franchise, $source);
 
         $workflow  = HiringWorkflow::factory()->forStore($source)->create();
         $stageA    = WorkflowStage::factory()->forWorkflow($workflow)->initial()->create();
@@ -317,7 +319,7 @@ class ConfigurationCopyTest extends TestCase
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
         $target    = $this->makeStore($franchise);
-        $admin     = $this->makeAdmin($franchise);
+        $admin     = $this->makeAdmin($franchise, $source);
 
         $workflow = HiringWorkflow::factory()->forStore($source)->create();
         $stageA   = WorkflowStage::factory()->forWorkflow($workflow)->initial()->create();
@@ -341,7 +343,7 @@ class ConfigurationCopyTest extends TestCase
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
         $target    = $this->makeStore($franchise);
-        $admin     = $this->makeAdmin($franchise);
+        $admin     = $this->makeAdmin($franchise, $source);
 
         $name = 'Onboarding Workflow';
 
@@ -378,7 +380,7 @@ class ConfigurationCopyTest extends TestCase
         $franchise    = $this->makeFranchise();
         $source       = $this->makeStore($franchise);
         $target       = $this->makeStore($franchise);
-        $admin        = $this->makeAdmin($franchise);
+        $admin        = $this->makeAdmin($franchise, $source);
 
         QuestionnaireTemplate::factory()->forStore($source)->create();
 
@@ -392,7 +394,7 @@ class ConfigurationCopyTest extends TestCase
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
         $target    = $this->makeStore($franchise);
-        $admin     = $this->makeAdmin($franchise);
+        $admin     = $this->makeAdmin($franchise, $source);
 
         $qt = QuestionnaireTemplate::factory()->forStore($source)->create();
         QuestionnaireQuestion::factory()->create([
@@ -414,7 +416,7 @@ class ConfigurationCopyTest extends TestCase
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
         $target    = $this->makeStore($franchise);
-        $admin     = $this->makeAdmin($franchise);
+        $admin     = $this->makeAdmin($franchise, $source);
 
         $workflow  = HiringWorkflow::factory()->forStore($source)->create();
         $stageA    = WorkflowStage::factory()->forWorkflow($workflow)->initial()->create();
@@ -443,7 +445,7 @@ class ConfigurationCopyTest extends TestCase
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
         $target    = $this->makeStore($franchise);
-        $admin     = $this->makeAdmin($franchise);
+        $admin     = $this->makeAdmin($franchise, $source);
 
         $workflow = HiringWorkflow::factory()->forStore($source)->create();
         $stageA   = WorkflowStage::factory()->forWorkflow($workflow)->initial()->create();
@@ -476,7 +478,7 @@ class ConfigurationCopyTest extends TestCase
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
         $target    = $this->makeStore($franchise);
-        $admin     = $this->makeAdmin($franchise);
+        $admin     = $this->makeAdmin($franchise, $source);
 
         DocumentTemplate::factory()->forStore($source)->create();
 
@@ -490,7 +492,7 @@ class ConfigurationCopyTest extends TestCase
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
         $target    = $this->makeStore($franchise);
-        $admin     = $this->makeAdmin($franchise);
+        $admin     = $this->makeAdmin($franchise, $source);
 
         $workflow    = HiringWorkflow::factory()->forStore($source)->create();
         $stageA      = WorkflowStage::factory()->forWorkflow($workflow)->initial()->create();
@@ -517,7 +519,7 @@ class ConfigurationCopyTest extends TestCase
         $franchise   = $this->makeFranchise();
         $source      = $this->makeStore($franchise);
         $target      = $this->makeStore($franchise);
-        $admin       = $this->makeAdmin($franchise);
+        $admin       = $this->makeAdmin($franchise, $source);
 
         $workflow    = HiringWorkflow::factory()->forStore($source)->create();
         $stageA      = WorkflowStage::factory()->forWorkflow($workflow)->initial()->create();
@@ -547,7 +549,7 @@ class ConfigurationCopyTest extends TestCase
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
         $target    = $this->makeStore($franchise);
-        $admin     = $this->makeAdmin($franchise);
+        $admin     = $this->makeAdmin($franchise, $source);
 
         AutomationRule::factory()->forStore($source)->create();
 
@@ -561,7 +563,7 @@ class ConfigurationCopyTest extends TestCase
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
         $target    = $this->makeStore($franchise);
-        $admin     = $this->makeAdmin($franchise);
+        $admin     = $this->makeAdmin($franchise, $source);
 
         $workflow = HiringWorkflow::factory()->forStore($source)->create();
         $stageA   = WorkflowStage::factory()->forWorkflow($workflow)->initial()->create();
@@ -592,7 +594,7 @@ class ConfigurationCopyTest extends TestCase
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
         $target    = $this->makeStore($franchise);
-        $admin     = $this->makeAdmin($franchise);
+        $admin     = $this->makeAdmin($franchise, $source);
 
         $workflow = HiringWorkflow::factory()->forStore($source)->create();
 
@@ -627,7 +629,7 @@ class ConfigurationCopyTest extends TestCase
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
         $target    = $this->makeStore($franchise);
-        $admin     = $this->makeAdmin($franchise);
+        $admin     = $this->makeAdmin($franchise, $source);
 
         $workflow = HiringWorkflow::factory()->forStore($source)->create(['name' => 'Original']);
 
@@ -645,7 +647,7 @@ class ConfigurationCopyTest extends TestCase
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
         $target    = $this->makeStore($franchise);
-        $admin     = $this->makeAdmin($franchise);
+        $admin     = $this->makeAdmin($franchise, $source);
 
         HiringWorkflow::factory()->forStore($source)->create();
 
@@ -668,7 +670,7 @@ class ConfigurationCopyTest extends TestCase
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
         $target    = $this->makeStore($franchise);
-        $admin     = $this->makeAdmin($franchise);
+        $admin     = $this->makeAdmin($franchise, $source);
 
         HiringWorkflow::factory()->forStore($source)->create();
 
@@ -687,7 +689,7 @@ class ConfigurationCopyTest extends TestCase
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
         $target    = $this->makeStore($franchise);
-        $admin     = $this->makeAdmin($franchise);
+        $admin     = $this->makeAdmin($franchise, $source);
 
         $response = $this->postCopy($admin, $source, ['target_store_id' => $target->id])
             ->assertCreated();
@@ -716,7 +718,7 @@ class ConfigurationCopyTest extends TestCase
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
         $target    = $this->makeStore($franchise);
-        $admin     = $this->makeAdmin($franchise);
+        $admin     = $this->makeAdmin($franchise, $source);
 
         $this->buildSourceConfig($source, $admin);
 

@@ -28,7 +28,8 @@ class DocumentTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store     = Store::factory()->for($franchise)->create();
-        $admin     = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $admin     = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $store->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
 
         return [$franchise, $store, $admin];
     }
@@ -178,7 +179,7 @@ class DocumentTest extends TestCase
     public function test_cannot_access_templates_for_inaccessible_store(): void
     {
         [$franchise, $store] = $this->makeStore();
-        $manager = User::factory()->storeManager()->create(['franchise_account_id' => $franchise->id]);
+        $manager = User::factory()->create();
         // No UserStoreAccess
 
         $this->actingAs($manager)
@@ -189,8 +190,8 @@ class DocumentTest extends TestCase
     public function test_recruiter_cannot_create_document_template(): void
     {
         [$franchise, $store] = $this->makeStore();
-        $recruiter = User::factory()->recruiter()->create(['franchise_account_id' => $franchise->id]);
-        UserStoreAccess::create(['user_id' => $recruiter->id, 'store_id' => $store->id]);
+        $recruiter = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $recruiter->id, 'store_id' => $store->id, 'role' => 'recruiter', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->actingAs($recruiter)
             ->postJson("/api/v1/stores/{$store->id}/document-templates", [
@@ -283,7 +284,7 @@ class DocumentTest extends TestCase
             ->getJson("/api/v1/workflow-stages/{$stage->id}/document-requirements")
             ->assertOk();
 
-        $this->assertCount(2, $response->json('data'));
+        $this->assertCount(2, $response->json('data.data'));
     }
 
     public function test_can_show_stage_document_requirement(): void
@@ -336,9 +337,12 @@ class DocumentTest extends TestCase
         $template  = $this->makeTemplate($store);
         [, $stage] = $this->makeApplication($store);
 
-        $outsider = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $outsider = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $outsider->id, 'store_id' => $store->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
         $otherFranchise = FranchiseAccount::factory()->create();
-        $outsider2 = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $otherFranchise->id]);
+        $otherStore = Store::factory()->for($otherFranchise)->create();
+        $outsider2 = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $outsider2->id, 'store_id' => $otherStore->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
 
         $this->actingAs($outsider2)
             ->postJson("/api/v1/workflow-stages/{$stage->id}/document-requirements", [
@@ -393,7 +397,7 @@ class DocumentTest extends TestCase
             ->getJson("/api/v1/applications/{$application->id}/documents")
             ->assertOk();
 
-        $this->assertCount(1, $response->json('data'));
+        $this->assertCount(1, $response->json('data.data'));
     }
 
     public function test_can_submit_applicant_document(): void
@@ -750,7 +754,9 @@ class DocumentTest extends TestCase
         $requirement = $this->makeRequirement($stage, $template);
 
         $otherFranchise = FranchiseAccount::factory()->create();
-        $outsider = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $otherFranchise->id]);
+        $otherStore2 = Store::factory()->for($otherFranchise)->create();
+        $outsider = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $outsider->id, 'store_id' => $otherStore2->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
 
         $this->actingAs($outsider)
             ->getJson("/api/v1/applications/{$application->id}/documents")

@@ -18,11 +18,27 @@ class StoreController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $query = Store::query()->with('franchiseAccount')->orderBy('store_name');
+        $request->validate([
+            'per_page'           => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'search'             => ['sometimes', 'string', 'max:255'],
+            'franchise_account_id' => ['sometimes', 'integer'],
+        ]);
+
+        $query = Store::query()->with('franchiseAccount');
 
         $this->storeAccessService->scopeQueryToAccessibleStores($query, $request->user(), 'id');
 
-        $stores = $query->paginate(20);
+        if ($request->filled('search')) {
+            $query->where('store_name', 'like', '%' . $request->input('search') . '%');
+        }
+
+        if ($request->filled('franchise_account_id')) {
+            $query->where('franchise_account_id', $request->integer('franchise_account_id'));
+        }
+
+        $query->orderBy('store_name')->orderBy('id');
+
+        $stores = $query->paginate($request->integer('per_page', 20));
 
         return ApiResponse::success(
             StoreResource::collection($stores)->response()->getData(true)
@@ -31,13 +47,15 @@ class StoreController extends Controller
 
     public function store(CreateStoreRequest $request): JsonResponse
     {
-        if (!$request->user()->isFranchiseAdmin()) {
+        $franchiseId = $this->storeAccessService->getFranchiseAccountIdForAdmin($request->user());
+
+        if ($franchiseId === null) {
             return ApiResponse::forbidden('Only franchise admins can create stores');
         }
 
         $store = Store::create([
             ...$request->validated(),
-            'franchise_account_id' => $request->user()->franchise_account_id,
+            'franchise_account_id' => $franchiseId,
         ]);
 
         return ApiResponse::created(
@@ -48,19 +66,15 @@ class StoreController extends Controller
 
     public function show(Store $store): JsonResponse
     {
-        // Access already verified by EnsureStoreAccess middleware
         return ApiResponse::success(new StoreResource($store->load('franchiseAccount')));
     }
 
     public function update(UpdateStoreRequest $request, Store $store): JsonResponse
     {
-        // Access verified by middleware; write operations require franchise_admin
-        if (!$request->user()->isFranchiseAdmin()) {
-            return ApiResponse::forbidden('Only franchise admins can update stores');
-        }
+        $role = $this->storeAccessService->getUserRoleAtStore($request->user(), $store);
 
-        if ($request->user()->franchise_account_id !== $store->franchise_account_id) {
-            return ApiResponse::forbidden('Cannot update a store from another franchise');
+        if ($role !== 'franchise_admin') {
+            return ApiResponse::forbidden('Only franchise admins can update stores');
         }
 
         $store->update($request->validated());
@@ -70,13 +84,10 @@ class StoreController extends Controller
 
     public function destroy(Request $request, Store $store): JsonResponse
     {
-        // Access verified by middleware; write operations require franchise_admin
-        if (!$request->user()->isFranchiseAdmin()) {
-            return ApiResponse::forbidden('Only franchise admins can delete stores');
-        }
+        $role = $this->storeAccessService->getUserRoleAtStore($request->user(), $store);
 
-        if ($request->user()->franchise_account_id !== $store->franchise_account_id) {
-            return ApiResponse::forbidden('Cannot delete a store from another franchise');
+        if ($role !== 'franchise_admin') {
+            return ApiResponse::forbidden('Only franchise admins can delete stores');
         }
 
         $store->delete();

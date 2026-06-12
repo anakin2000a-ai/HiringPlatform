@@ -10,23 +10,53 @@ use App\Http\Responses\ApiResponse;
 use App\Models\QuestionnaireQuestion;
 use App\Models\QuestionnaireTemplate;
 use App\Models\Store;
+use App\Services\AccessControl\StoreAccessService;
 use App\Services\Questionnaires\QuestionnaireQuestionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class QuestionnaireQuestionController extends Controller
 {
-    public function __construct(private readonly QuestionnaireQuestionService $questionService) {}
+    public function __construct(
+        private readonly QuestionnaireQuestionService $questionService,
+        private readonly StoreAccessService $storeAccessService,
+    ) {}
 
-    public function index(Store $store, QuestionnaireTemplate $questionnaire): JsonResponse
+    public function index(Request $request, Store $store, QuestionnaireTemplate $questionnaire): JsonResponse
     {
         if (! $this->questionnaireBelongsToStore($questionnaire, $store)) {
             return ApiResponse::notFound('Questionnaire not found');
         }
 
-        $questions = $questionnaire->questions()->get();
+        $request->validate([
+            'per_page'    => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'type'        => ['sometimes', 'string'],
+            'is_required' => ['sometimes', 'boolean'],
+            'search'      => ['sometimes', 'string', 'max:255'],
+        ]);
 
-        return ApiResponse::success(QuestionnaireQuestionResource::collection($questions));
+        $query = $questionnaire->questions();
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->input('type'));
+        }
+        if ($request->has('is_required')) {
+            $query->where('is_required', $request->boolean('is_required'));
+        }
+        if ($request->filled('search')) {
+            $term = '%' . $request->input('search') . '%';
+            $query->where(fn ($q) => $q
+                ->where('label', 'like', $term)
+                ->orWhere('question_key', 'like', $term)
+            );
+        }
+
+        $questions = $query->orderBy('position')->orderBy('id')
+            ->paginate($request->integer('per_page', 20));
+
+        return ApiResponse::success(
+            QuestionnaireQuestionResource::collection($questions)->response()->getData(true)
+        );
     }
 
     public function store(CreateQuestionnaireQuestionRequest $request, Store $store, QuestionnaireTemplate $questionnaire): JsonResponse
@@ -35,7 +65,7 @@ class QuestionnaireQuestionController extends Controller
             return ApiResponse::notFound('Questionnaire not found');
         }
 
-        if (! $this->canManage($request)) {
+        if (! $this->canManage($request, $store)) {
             return ApiResponse::forbidden('Only franchise admins and store managers can manage questionnaire questions.');
         }
 
@@ -54,7 +84,7 @@ class QuestionnaireQuestionController extends Controller
             return ApiResponse::notFound('Question not found');
         }
 
-        if (! $this->canManage($request)) {
+        if (! $this->canManage($request, $store)) {
             return ApiResponse::forbidden('Only franchise admins and store managers can manage questionnaire questions.');
         }
 
@@ -73,7 +103,7 @@ class QuestionnaireQuestionController extends Controller
             return ApiResponse::notFound('Question not found');
         }
 
-        if (! $this->canManage($request)) {
+        if (! $this->canManage($request, $store)) {
             return ApiResponse::forbidden('Only franchise admins and store managers can manage questionnaire questions.');
         }
 
@@ -92,8 +122,12 @@ class QuestionnaireQuestionController extends Controller
         return $question->questionnaire_template_id === $questionnaire->id;
     }
 
-    private function canManage(Request $request): bool
+    private function canManage(Request $request, Store $store): bool
     {
-        return in_array($request->user()->role, ['franchise_admin', 'store_manager'], true);
+        return in_array(
+            $this->storeAccessService->getUserRoleAtStore($request->user(), $store),
+            ['franchise_admin', 'store_manager'],
+            true
+        );
     }
 }

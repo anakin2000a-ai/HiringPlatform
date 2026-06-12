@@ -22,7 +22,8 @@ class WorkflowManagementTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $admin = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $store->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
 
         return [$franchise, $store, $admin];
     }
@@ -31,8 +32,8 @@ class WorkflowManagementTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
-        $manager = User::factory()->storeManager()->create(['franchise_account_id' => $franchise->id]);
-        UserStoreAccess::create(['user_id' => $manager->id, 'store_id' => $store->id]);
+        $manager = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $manager->id, 'store_id' => $store->id, 'role' => 'store_manager', 'access_scope' => 'store', 'status' => 'active']);
 
         return [$franchise, $store, $manager];
     }
@@ -75,8 +76,8 @@ class WorkflowManagementTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
-        $recruiter = User::factory()->recruiter()->create(['franchise_account_id' => $franchise->id]);
-        UserStoreAccess::create(['user_id' => $recruiter->id, 'store_id' => $store->id]);
+        $recruiter = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $recruiter->id, 'store_id' => $store->id, 'role' => 'recruiter', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->actingAs($recruiter)
             ->postJson("/api/v1/stores/{$store->id}/workflows", ['name' => 'Attempted'])
@@ -87,12 +88,8 @@ class WorkflowManagementTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
-        $viewer = User::factory()->create([
-            'franchise_account_id' => $franchise->id,
-            'role' => 'viewer',
-            'access_scope' => 'store',
-        ]);
-        UserStoreAccess::create(['user_id' => $viewer->id, 'store_id' => $store->id]);
+        $viewer = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $viewer->id, 'store_id' => $store->id, 'role' => 'viewer', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->actingAs($viewer)
             ->postJson("/api/v1/stores/{$store->id}/workflows", ['name' => 'Attempted'])
@@ -220,7 +217,8 @@ class WorkflowManagementTest extends TestCase
         $franchise = FranchiseAccount::factory()->create();
         $storeA = Store::factory()->for($franchise)->create();
         $storeB = Store::factory()->for($franchise)->create();
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $admin = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $storeA->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
 
         HiringWorkflow::factory()->forStore($storeA)->count(2)->create();
         HiringWorkflow::factory()->forStore($storeB)->count(3)->create();
@@ -324,7 +322,8 @@ class WorkflowManagementTest extends TestCase
         $franchise = FranchiseAccount::factory()->create();
         $storeA = Store::factory()->for($franchise)->create();
         $storeB = Store::factory()->for($franchise)->create();
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $admin = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $storeA->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
 
         $workflowB = HiringWorkflow::factory()->forStore($storeB)->create();
 
@@ -338,7 +337,7 @@ class WorkflowManagementTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
-        $manager = User::factory()->storeManager()->create(['franchise_account_id' => $franchise->id]);
+        $manager = User::factory()->create();
         // No UserStoreAccess — manager cannot reach this store
 
         $this->actingAs($manager)

@@ -59,7 +59,6 @@ class NatsSyncTest extends TestCase
             'id'    => $externalId,
             'name'  => 'Alice Smith',
             'email' => 'alice@example.com',
-            'role'  => 'recruiter',
         ]);
 
         $this->assertDatabaseHas('inbox_events', [
@@ -73,7 +72,6 @@ class NatsSyncTest extends TestCase
         $user = User::factory()->create([
             'name'  => 'Old Name',
             'email' => 'old@example.com',
-            'role'  => 'viewer',
         ]);
 
         $this->processor()->process(
@@ -89,10 +87,9 @@ class NatsSyncTest extends TestCase
         $user->refresh();
         $this->assertSame('New Name', $user->name);
         $this->assertSame('new@example.com', $user->email);
-        $this->assertSame('store_manager', $user->role);
     }
 
-    public function test_user_created_event_ignores_invalid_role(): void
+    public function test_user_created_event_with_unknown_role_still_creates_user(): void
     {
         $externalId = 5002;
 
@@ -108,7 +105,7 @@ class NatsSyncTest extends TestCase
 
         $this->assertDatabaseHas('users', [
             'id'   => $externalId,
-            'role' => 'viewer',
+            'name' => 'Bob',
         ]);
     }
 

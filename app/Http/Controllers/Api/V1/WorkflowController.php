@@ -9,21 +9,41 @@ use App\Http\Resources\HiringWorkflowResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\HiringWorkflow;
 use App\Models\Store;
+use App\Services\AccessControl\StoreAccessService;
 use App\Services\Workflows\WorkflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class WorkflowController extends Controller
 {
-    public function __construct(private readonly WorkflowService $workflowService) {}
+    public function __construct(
+        private readonly WorkflowService $workflowService,
+        private readonly StoreAccessService $storeAccessService,
+    ) {}
 
     public function index(Request $request, Store $store): JsonResponse
     {
-        $workflows = HiringWorkflow::where('store_id', $store->id)
-            ->with('stages')
-            ->orderBy('name')
-            ->orderBy('version')
-            ->paginate(20);
+        $request->validate([
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'search'   => ['sometimes', 'string', 'max:255'],
+            'status'   => ['sometimes', 'string'],
+            'version'  => ['sometimes', 'integer', 'min:1'],
+        ]);
+
+        $query = HiringWorkflow::where('store_id', $store->id)->with('stages');
+
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->input('search') . '%');
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+        if ($request->filled('version')) {
+            $query->where('version', $request->integer('version'));
+        }
+
+        $workflows = $query->orderBy('name')->orderBy('version')->orderBy('id')
+            ->paginate($request->integer('per_page', 20));
 
         return ApiResponse::success(
             HiringWorkflowResource::collection($workflows)->response()->getData(true)
@@ -32,7 +52,7 @@ class WorkflowController extends Controller
 
     public function store(CreateWorkflowRequest $request, Store $store): JsonResponse
     {
-        if (! $this->canManageWorkflows($request)) {
+        if (! $this->canManageWorkflows($request, $store)) {
             return ApiResponse::forbidden('Only franchise admins and store managers can manage workflows.');
         }
 
@@ -56,7 +76,7 @@ class WorkflowController extends Controller
             return ApiResponse::notFound('Workflow not found');
         }
 
-        if (! $this->canManageWorkflows($request)) {
+        if (! $this->canManageWorkflows($request, $store)) {
             return ApiResponse::forbidden('Only franchise admins and store managers can manage workflows.');
         }
 
@@ -71,7 +91,7 @@ class WorkflowController extends Controller
             return ApiResponse::notFound('Workflow not found');
         }
 
-        if (! $request->user()->isFranchiseAdmin()) {
+        if ($this->storeAccessService->getUserRoleAtStore($request->user(), $store) !== 'franchise_admin') {
             return ApiResponse::forbidden('Only franchise admins can delete workflows.');
         }
 
@@ -85,8 +105,12 @@ class WorkflowController extends Controller
         return $workflow->store_id === $store->id;
     }
 
-    private function canManageWorkflows(Request $request): bool
+    private function canManageWorkflows(Request $request, Store $store): bool
     {
-        return in_array($request->user()->role, ['franchise_admin', 'store_manager'], true);
+        return in_array(
+            $this->storeAccessService->getUserRoleAtStore($request->user(), $store),
+            ['franchise_admin', 'store_manager'],
+            true
+        );
     }
 }

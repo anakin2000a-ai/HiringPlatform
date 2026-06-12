@@ -9,25 +9,45 @@ use App\Http\Resources\JobOpeningResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\JobOpening;
 use App\Models\Store;
+use App\Services\AccessControl\StoreAccessService;
 use App\Services\JobOpenings\JobOpeningService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class JobOpeningController extends Controller
 {
-    public function __construct(private readonly JobOpeningService $jobOpeningService) {}
+    public function __construct(
+        private readonly JobOpeningService $jobOpeningService,
+        private readonly StoreAccessService $storeAccessService,
+    ) {}
 
     public function index(Request $request, Store $store): JsonResponse
     {
-        $query = JobOpening::where('store_id', $store->id)
-            ->with('hiringWorkflow')
-            ->orderByDesc('created_at');
+        $request->validate([
+            'per_page'          => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'status'            => ['sometimes', 'string', 'in:draft,published,closed'],
+            'employment_type'   => ['sometimes', 'string', 'max:100'],
+            'hiring_workflow_id'=> ['sometimes', 'integer'],
+            'search'            => ['sometimes', 'string', 'max:255'],
+        ]);
+
+        $query = JobOpening::where('store_id', $store->id);
 
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
         }
+        if ($request->filled('employment_type')) {
+            $query->where('employment_type', $request->input('employment_type'));
+        }
+        if ($request->filled('hiring_workflow_id')) {
+            $query->where('hiring_workflow_id', $request->integer('hiring_workflow_id'));
+        }
+        if ($request->filled('search')) {
+            $query->where('title', 'like', '%' . $request->input('search') . '%');
+        }
 
-        $jobOpenings = $query->paginate(20);
+        $jobOpenings = $query->orderByDesc('created_at')->orderByDesc('id')
+            ->paginate($request->integer('per_page', 20));
 
         return ApiResponse::success(
             JobOpeningResource::collection($jobOpenings)->response()->getData(true)
@@ -36,7 +56,7 @@ class JobOpeningController extends Controller
 
     public function store(CreateJobOpeningRequest $request, Store $store): JsonResponse
     {
-        if (! $this->canManage($request)) {
+        if (! $this->canManage($request, $store)) {
             return ApiResponse::forbidden('Only franchise admins and store managers can create job openings.');
         }
 
@@ -60,7 +80,7 @@ class JobOpeningController extends Controller
             return ApiResponse::notFound('Job opening not found');
         }
 
-        if (! $this->canManage($request)) {
+        if (! $this->canManage($request, $store)) {
             return ApiResponse::forbidden('Only franchise admins and store managers can update job openings.');
         }
 
@@ -75,7 +95,7 @@ class JobOpeningController extends Controller
             return ApiResponse::notFound('Job opening not found');
         }
 
-        if (! $request->user()->isFranchiseAdmin()) {
+        if ($this->storeAccessService->getUserRoleAtStore($request->user(), $store) !== 'franchise_admin') {
             return ApiResponse::forbidden('Only franchise admins can delete job openings.');
         }
 
@@ -90,7 +110,7 @@ class JobOpeningController extends Controller
             return ApiResponse::notFound('Job opening not found');
         }
 
-        if (! $this->canManage($request)) {
+        if (! $this->canManage($request, $store)) {
             return ApiResponse::forbidden('Only franchise admins and store managers can publish job openings.');
         }
 
@@ -105,7 +125,7 @@ class JobOpeningController extends Controller
             return ApiResponse::notFound('Job opening not found');
         }
 
-        if (! $this->canManage($request)) {
+        if (! $this->canManage($request, $store)) {
             return ApiResponse::forbidden('Only franchise admins and store managers can close job openings.');
         }
 
@@ -119,8 +139,12 @@ class JobOpeningController extends Controller
         return $jobOpening->store_id === $store->id;
     }
 
-    private function canManage(Request $request): bool
+    private function canManage(Request $request, Store $store): bool
     {
-        return in_array($request->user()->role, ['franchise_admin', 'store_manager'], true);
+        return in_array(
+            $this->storeAccessService->getUserRoleAtStore($request->user(), $store),
+            ['franchise_admin', 'store_manager'],
+            true
+        );
     }
 }

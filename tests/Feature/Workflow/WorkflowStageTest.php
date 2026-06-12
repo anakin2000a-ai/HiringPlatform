@@ -23,7 +23,8 @@ class WorkflowStageTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $admin = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $store->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
         $workflow = HiringWorkflow::factory()->forStore($store)->create();
 
         return [$franchise, $store, $admin, $workflow];
@@ -119,7 +120,7 @@ class WorkflowStageTest extends TestCase
             ->getJson("/api/v1/stores/{$store->id}/workflows/{$workflow->id}/stages")
             ->assertOk();
 
-        $this->assertCount(2, $response->json('data'));
+        $this->assertCount(2, $response->json('data.data'));
     }
 
     // -----------------------------------------------------------------------
@@ -178,7 +179,8 @@ class WorkflowStageTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $admin = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $store->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
 
         $workflowA = HiringWorkflow::factory()->forStore($store)->create();
         $workflowB = HiringWorkflow::factory()->forStore($store)->create();
@@ -197,7 +199,7 @@ class WorkflowStageTest extends TestCase
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
         $workflow = HiringWorkflow::factory()->forStore($store)->create();
-        $manager = User::factory()->storeManager()->create(['franchise_account_id' => $franchise->id]);
+        $manager = User::factory()->create();
         // No UserStoreAccess — store is inaccessible
 
         $this->actingAs($manager)

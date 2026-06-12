@@ -32,11 +32,32 @@ class ApplicantDocumentController extends Controller
             return ApiResponse::forbidden();
         }
 
-        $documents = ApplicantDocument::where('application_id', $application->id)
-            ->with('documentTemplate')
-            ->get();
+        $request->validate([
+            'per_page'             => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'status'               => ['sometimes', 'string', 'in:pending,submitted,signed,approved,rejected'],
+            'workflow_stage_id'    => ['sometimes', 'integer'],
+            'document_template_id' => ['sometimes', 'integer'],
+        ]);
 
-        return ApiResponse::success(ApplicantDocumentResource::collection($documents));
+        $query = ApplicantDocument::where('application_id', $application->id)
+            ->with('documentTemplate');
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+        if ($request->filled('workflow_stage_id')) {
+            $query->where('workflow_stage_id', $request->integer('workflow_stage_id'));
+        }
+        if ($request->filled('document_template_id')) {
+            $query->where('document_template_id', $request->integer('document_template_id'));
+        }
+
+        $documents = $query->orderByDesc('created_at')->orderByDesc('id')
+            ->paginate($request->integer('per_page', 20));
+
+        return ApiResponse::success(
+            ApplicantDocumentResource::collection($documents)->response()->getData(true)
+        );
     }
 
     public function store(InitiateApplicantDocumentRequest $request, Application $application): JsonResponse
@@ -104,7 +125,7 @@ class ApplicantDocumentController extends Controller
             return ApiResponse::forbidden();
         }
 
-        if (! $this->canManage($request)) {
+        if (! $this->canManage($request, $store)) {
             return ApiResponse::forbidden('Only franchise admins and store managers can approve documents.');
         }
 
@@ -122,7 +143,7 @@ class ApplicantDocumentController extends Controller
             return ApiResponse::forbidden();
         }
 
-        if (! $this->canManage($request)) {
+        if (! $this->canManage($request, $store)) {
             return ApiResponse::forbidden('Only franchise admins and store managers can reject documents.');
         }
 
@@ -135,8 +156,12 @@ class ApplicantDocumentController extends Controller
         return ApiResponse::success(new ApplicantDocumentResource($document), 'Document rejected');
     }
 
-    private function canManage(Request $request): bool
+    private function canManage(Request $request, \App\Models\Store $store): bool
     {
-        return in_array($request->user()->role, ['franchise_admin', 'store_manager'], true);
+        return in_array(
+            $this->storeAccessService->getUserRoleAtStore($request->user(), $store),
+            ['franchise_admin', 'store_manager'],
+            true
+        );
     }
 }

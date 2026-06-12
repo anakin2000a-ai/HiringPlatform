@@ -119,7 +119,7 @@ class AssignmentEventTest extends TestCase
         $user  = $this->makeUser();
         $store = $this->makeStore();
 
-        UserStoreAccess::create(['user_id' => $user->id, 'store_id' => $store->id]);
+        UserStoreAccess::create(['user_id' => $user->id, 'store_id' => $store->id, 'role' => 'viewer', 'access_scope' => 'store', 'status' => 'active']);
 
         $envelope = $this->envelope('auth.v1.assignment.user_role_store.assigned', [
             'user_id'  => $user->id,
@@ -201,7 +201,7 @@ class AssignmentEventTest extends TestCase
     {
         $user  = $this->makeUser();
         $store = $this->makeStore();
-        UserStoreAccess::create(['user_id' => $user->id, 'store_id' => $store->id]);
+        UserStoreAccess::create(['user_id' => $user->id, 'store_id' => $store->id, 'role' => 'viewer', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->processor()->process(
             'auth.v1.assignment.user_role_store.removed',
@@ -255,7 +255,7 @@ class AssignmentEventTest extends TestCase
     {
         $user  = $this->makeUser();
         $store = $this->makeStore();
-        UserStoreAccess::create(['user_id' => $user->id, 'store_id' => $store->id]);
+        UserStoreAccess::create(['user_id' => $user->id, 'store_id' => $store->id, 'role' => 'viewer', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->processor()->process(
             'auth.v1.assignment.user_role_store.toggled',
@@ -319,7 +319,7 @@ class AssignmentEventTest extends TestCase
     {
         $user  = $this->makeUser();
         $store = $this->makeStore();
-        UserStoreAccess::create(['user_id' => $user->id, 'store_id' => $store->id]);
+        UserStoreAccess::create(['user_id' => $user->id, 'store_id' => $store->id, 'role' => 'viewer', 'access_scope' => 'store', 'status' => 'active']);
 
         $result = $this->processor()->process(
             'auth.v1.assignment.user_role_store.toggled',
@@ -510,7 +510,7 @@ class AssignmentEventTest extends TestCase
     {
         $user  = $this->makeUser();
         $store = $this->makeStore();
-        UserStoreAccess::create(['user_id' => $user->id, 'store_id' => $store->id]);
+        UserStoreAccess::create(['user_id' => $user->id, 'store_id' => $store->id, 'role' => 'viewer', 'access_scope' => 'store', 'status' => 'active']);
 
         $service = new StoreAccessService();
         $this->assertTrue($service->canAccessStore($user, $store));

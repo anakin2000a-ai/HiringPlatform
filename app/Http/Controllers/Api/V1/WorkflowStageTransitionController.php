@@ -10,23 +10,53 @@ use App\Http\Responses\ApiResponse;
 use App\Models\HiringWorkflow;
 use App\Models\Store;
 use App\Models\WorkflowStageTransition;
+use App\Services\AccessControl\StoreAccessService;
 use App\Services\Workflows\WorkflowTransitionValidator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class WorkflowStageTransitionController extends Controller
 {
-    public function __construct(private readonly WorkflowTransitionValidator $transitionValidator) {}
+    public function __construct(
+        private readonly WorkflowTransitionValidator $transitionValidator,
+        private readonly StoreAccessService $storeAccessService,
+    ) {}
 
-    public function index(Store $store, HiringWorkflow $workflow): JsonResponse
+    public function index(\Illuminate\Http\Request $request, Store $store, HiringWorkflow $workflow): JsonResponse
     {
         if (! $this->workflowBelongsToStore($workflow, $store)) {
             return ApiResponse::notFound('Workflow not found');
         }
 
-        $transitions = $workflow->transitions()->with(['fromStage', 'toStage'])->get();
+        $request->validate([
+            'per_page'            => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'from_stage_id'       => ['sometimes', 'integer'],
+            'to_stage_id'         => ['sometimes', 'integer'],
+            'is_manual_allowed'   => ['sometimes', 'boolean'],
+            'is_automatic_allowed'=> ['sometimes', 'boolean'],
+        ]);
 
-        return ApiResponse::success(WorkflowStageTransitionResource::collection($transitions));
+        $query = $workflow->transitions();
+
+        if ($request->filled('from_stage_id')) {
+            $query->where('from_stage_id', $request->integer('from_stage_id'));
+        }
+        if ($request->filled('to_stage_id')) {
+            $query->where('to_stage_id', $request->integer('to_stage_id'));
+        }
+        if ($request->has('is_manual_allowed')) {
+            $query->where('is_manual_allowed', $request->boolean('is_manual_allowed'));
+        }
+        if ($request->has('is_automatic_allowed')) {
+            $query->where('is_automatic_allowed', $request->boolean('is_automatic_allowed'));
+        }
+
+        $transitions = $query->orderBy('id')
+            ->paginate($request->integer('per_page', 20));
+
+        return ApiResponse::success(
+            WorkflowStageTransitionResource::collection($transitions)->response()->getData(true)
+        );
     }
 
     public function store(CreateWorkflowStageTransitionRequest $request, Store $store, HiringWorkflow $workflow): JsonResponse
@@ -35,7 +65,7 @@ class WorkflowStageTransitionController extends Controller
             return ApiResponse::notFound('Workflow not found');
         }
 
-        if (! $this->canManageWorkflows($request)) {
+        if (! $this->canManageWorkflows($request, $store)) {
             return ApiResponse::forbidden('Only franchise admins and store managers can manage workflow transitions.');
         }
 
@@ -67,7 +97,7 @@ class WorkflowStageTransitionController extends Controller
             return ApiResponse::notFound('Transition not found');
         }
 
-        if (! $this->canManageWorkflows($request)) {
+        if (! $this->canManageWorkflows($request, $store)) {
             return ApiResponse::forbidden('Only franchise admins and store managers can manage workflow transitions.');
         }
 
@@ -96,7 +126,7 @@ class WorkflowStageTransitionController extends Controller
             return ApiResponse::notFound('Transition not found');
         }
 
-        if (! $this->canManageWorkflows($request)) {
+        if (! $this->canManageWorkflows($request, $store)) {
             return ApiResponse::forbidden('Only franchise admins and store managers can manage workflow transitions.');
         }
 
@@ -115,8 +145,12 @@ class WorkflowStageTransitionController extends Controller
         return $transition->hiring_workflow_id === $workflow->id;
     }
 
-    private function canManageWorkflows(Request $request): bool
+    private function canManageWorkflows(Request $request, Store $store): bool
     {
-        return in_array($request->user()->role, ['franchise_admin', 'store_manager'], true);
+        return in_array(
+            $this->storeAccessService->getUserRoleAtStore($request->user(), $store),
+            ['franchise_admin', 'store_manager'],
+            true
+        );
     }
 }

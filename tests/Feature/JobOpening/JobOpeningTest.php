@@ -23,7 +23,8 @@ class JobOpeningTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $admin = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $store->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
         $workflow = HiringWorkflow::factory()->forStore($store)->create();
 
         return [$franchise, $store, $admin, $workflow];
@@ -33,8 +34,8 @@ class JobOpeningTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
-        $manager = User::factory()->storeManager()->create(['franchise_account_id' => $franchise->id]);
-        UserStoreAccess::create(['user_id' => $manager->id, 'store_id' => $store->id]);
+        $manager = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $manager->id, 'store_id' => $store->id, 'role' => 'store_manager', 'access_scope' => 'store', 'status' => 'active']);
         $workflow = HiringWorkflow::factory()->forStore($store)->create();
 
         return [$franchise, $store, $manager, $workflow];
@@ -83,8 +84,8 @@ class JobOpeningTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
-        $recruiter = User::factory()->recruiter()->create(['franchise_account_id' => $franchise->id]);
-        UserStoreAccess::create(['user_id' => $recruiter->id, 'store_id' => $store->id]);
+        $recruiter = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $recruiter->id, 'store_id' => $store->id, 'role' => 'recruiter', 'access_scope' => 'store', 'status' => 'active']);
         $workflow = HiringWorkflow::factory()->forStore($store)->create();
 
         $this->actingAs($recruiter)
@@ -100,7 +101,7 @@ class JobOpeningTest extends TestCase
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
         $workflow = HiringWorkflow::factory()->forStore($store)->create();
-        $manager = User::factory()->storeManager()->create(['franchise_account_id' => $franchise->id]);
+        $manager = User::factory()->create();
         // No UserStoreAccess created
 
         $this->actingAs($manager)
@@ -116,7 +117,8 @@ class JobOpeningTest extends TestCase
         $franchise = FranchiseAccount::factory()->create();
         $storeA = Store::factory()->for($franchise)->create();
         $storeB = Store::factory()->for($franchise)->create();
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $admin = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $storeA->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
 
         $workflowB = HiringWorkflow::factory()->forStore($storeB)->create();
 
@@ -180,7 +182,8 @@ class JobOpeningTest extends TestCase
         $franchise = FranchiseAccount::factory()->create();
         $storeA = Store::factory()->for($franchise)->create();
         $storeB = Store::factory()->for($franchise)->create();
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $admin = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $storeA->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
 
         $workflowA = HiringWorkflow::factory()->forStore($storeA)->create();
         $workflowB = HiringWorkflow::factory()->forStore($storeB)->create();
@@ -229,7 +232,8 @@ class JobOpeningTest extends TestCase
         $franchise = FranchiseAccount::factory()->create();
         $storeA = Store::factory()->for($franchise)->create();
         $storeB = Store::factory()->for($franchise)->create();
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $admin = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $storeA->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
 
         $workflowB = HiringWorkflow::factory()->forStore($storeB)->create();
         $jobInB = JobOpening::factory()->withWorkflow($workflowB)->create();
@@ -380,7 +384,7 @@ class JobOpeningTest extends TestCase
         $store = Store::factory()->for($franchise)->create();
         $workflow = HiringWorkflow::factory()->forStore($store)->create();
         $job = JobOpening::factory()->withWorkflow($workflow)->create();
-        $manager = User::factory()->storeManager()->create(['franchise_account_id' => $franchise->id]);
+        $manager = User::factory()->create();
         // No UserStoreAccess
 
         $this->actingAs($manager)

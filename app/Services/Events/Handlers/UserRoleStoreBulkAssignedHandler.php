@@ -11,17 +11,20 @@ use RuntimeException;
 
 class UserRoleStoreBulkAssignedHandler implements EventHandlerInterface
 {
+    private const ALLOWED_ROLES = ['franchise_admin', 'store_manager', 'recruiter', 'viewer'];
+
     /**
      * Handle auth.v1.assignment.user_role_store.bulk_assigned.
      *
      * Expects data.assignments — an array of assignment objects, each in either:
-     *   Shape A: {assignment: {user_id, store_id, ...}}
-     *   Shape B: {user_id, store_id, ...}
+     *   Shape A: {assignment: {user_id, store_id, role, access_scope, ...}}
+     *   Shape B: {user_id, store_id, role, access_scope, ...}
      *
      * Atomic behavior: all referenced users and stores are validated before any
      * row is written.  If any user or store is missing locally, a RuntimeException
      * is thrown and the entire event is marked failed — no partial rows are written.
-     * The event will be retried once the missing records have been synchronized.
+     *
+     * role defaults to 'viewer', access_scope defaults to 'store' when absent.
      */
     public function handle(array $data): void
     {
@@ -38,7 +41,6 @@ class UserRoleStoreBulkAssignedHandler implements EventHandlerInterface
         }
 
         DB::transaction(function () use ($pairs): void {
-            // Validate all references atomically before any write.
             foreach ($pairs as $pair) {
                 if (! User::where('id', $pair['user_id'])->exists()) {
                     throw new RuntimeException(
@@ -55,22 +57,18 @@ class UserRoleStoreBulkAssignedHandler implements EventHandlerInterface
                 }
             }
 
-            // All references valid — write all rows.
             foreach ($pairs as $pair) {
-                UserStoreAccess::firstOrCreate([
-                    'user_id'  => $pair['user_id'],
-                    'store_id' => $pair['store_id'],
-                ]);
+                UserStoreAccess::firstOrCreate(
+                    ['user_id' => $pair['user_id'], 'store_id' => $pair['store_id']],
+                    ['role' => $pair['role'], 'access_scope' => $pair['access_scope'], 'status' => 'active']
+                );
             }
         });
     }
 
     /**
-     * Extract (user_id, store_id) pairs from the raw assignments array,
-     * normalising both Shape A and Shape B per element.
-     *
      * @param  array<int, mixed>  $assignments
-     * @return array<int, array{user_id: int, store_id: int}>
+     * @return array<int, array{user_id: int, store_id: int, role: string, access_scope: string}>
      */
     private function extractPairs(array $assignments): array
     {
@@ -92,9 +90,18 @@ class UserRoleStoreBulkAssignedHandler implements EventHandlerInterface
                 continue;
             }
 
+            $role  = (isset($a['role']) && in_array($a['role'], self::ALLOWED_ROLES, true))
+                ? $a['role']
+                : 'viewer';
+            $scope = (isset($a['access_scope']) && in_array($a['access_scope'], ['franchise', 'store'], true))
+                ? $a['access_scope']
+                : 'store';
+
             $pairs[] = [
-                'user_id'  => (int) $userId,
-                'store_id' => (int) $storeId,
+                'user_id'      => (int) $userId,
+                'store_id'     => (int) $storeId,
+                'role'         => $role,
+                'access_scope' => $scope,
             ];
         }
 

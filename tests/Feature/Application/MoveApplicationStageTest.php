@@ -36,7 +36,8 @@ class MoveApplicationStageTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $admin = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $store->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
 
         $workflow = HiringWorkflow::factory()->forStore($store)->create();
 
@@ -319,8 +320,8 @@ class MoveApplicationStageTest extends TestCase
         [, $store, , , , $screening, , , , $application] = $this->makeSetup();
 
         $franchise = FranchiseAccount::find($store->franchise_account_id);
-        $manager   = User::factory()->storeManager()->create(['franchise_account_id' => $franchise->id]);
-        UserStoreAccess::create(['user_id' => $manager->id, 'store_id' => $store->id]);
+        $manager   = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $manager->id, 'store_id' => $store->id, 'role' => 'store_manager', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->actingAs($manager)
             ->postJson($this->moveUrl($store, $application), ['to_stage_id' => $screening->id])
@@ -332,8 +333,8 @@ class MoveApplicationStageTest extends TestCase
         [, $store, , , , $screening, , , , $application] = $this->makeSetup();
 
         $franchise = FranchiseAccount::find($store->franchise_account_id);
-        $recruiter = User::factory()->recruiter()->create(['franchise_account_id' => $franchise->id]);
-        UserStoreAccess::create(['user_id' => $recruiter->id, 'store_id' => $store->id]);
+        $recruiter = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $recruiter->id, 'store_id' => $store->id, 'role' => 'recruiter', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->actingAs($recruiter)
             ->postJson($this->moveUrl($store, $application), ['to_stage_id' => $screening->id])
@@ -353,7 +354,7 @@ class MoveApplicationStageTest extends TestCase
         [, $store, , , , $screening, , , , $application] = $this->makeSetup();
 
         $franchise = FranchiseAccount::find($store->franchise_account_id);
-        $manager   = User::factory()->storeManager()->create(['franchise_account_id' => $franchise->id]);
+        $manager   = User::factory()->create();
         // No UserStoreAccess
 
         $this->actingAs($manager)
@@ -470,7 +471,7 @@ class MoveApplicationStageTest extends TestCase
         [, $store, , , , , , , , $application] = $this->makeSetup();
 
         $franchise = FranchiseAccount::find($store->franchise_account_id);
-        $manager   = User::factory()->storeManager()->create(['franchise_account_id' => $franchise->id]);
+        $manager   = User::factory()->create();
         // No UserStoreAccess
 
         $this->actingAs($manager)

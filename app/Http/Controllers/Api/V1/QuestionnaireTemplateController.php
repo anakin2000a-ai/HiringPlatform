@@ -9,19 +9,37 @@ use App\Http\Resources\QuestionnaireTemplateResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\QuestionnaireTemplate;
 use App\Models\Store;
+use App\Services\AccessControl\StoreAccessService;
 use App\Services\Questionnaires\QuestionnaireService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class QuestionnaireTemplateController extends Controller
 {
-    public function __construct(private readonly QuestionnaireService $questionnaireService) {}
+    public function __construct(
+        private readonly QuestionnaireService $questionnaireService,
+        private readonly StoreAccessService $storeAccessService,
+    ) {}
 
-    public function index(Store $store): JsonResponse
+    public function index(Request $request, Store $store): JsonResponse
     {
-        $questionnaires = QuestionnaireTemplate::where('store_id', $store->id)
-            ->orderBy('name')
-            ->paginate(20);
+        $request->validate([
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'status'   => ['sometimes', 'string'],
+            'search'   => ['sometimes', 'string', 'max:255'],
+        ]);
+
+        $query = QuestionnaireTemplate::where('store_id', $store->id);
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->input('search') . '%');
+        }
+
+        $questionnaires = $query->orderBy('name')->orderBy('version')->orderBy('id')
+            ->paginate($request->integer('per_page', 20));
 
         return ApiResponse::success(
             QuestionnaireTemplateResource::collection($questionnaires)->response()->getData(true)
@@ -30,7 +48,7 @@ class QuestionnaireTemplateController extends Controller
 
     public function store(CreateQuestionnaireTemplateRequest $request, Store $store): JsonResponse
     {
-        if (! $this->canManage($request)) {
+        if (! $this->canManage($request, $store)) {
             return ApiResponse::forbidden('Only franchise admins and store managers can manage questionnaires.');
         }
 
@@ -56,7 +74,7 @@ class QuestionnaireTemplateController extends Controller
             return ApiResponse::notFound('Questionnaire not found');
         }
 
-        if (! $this->canManage($request)) {
+        if (! $this->canManage($request, $store)) {
             return ApiResponse::forbidden('Only franchise admins and store managers can manage questionnaires.');
         }
 
@@ -71,7 +89,7 @@ class QuestionnaireTemplateController extends Controller
             return ApiResponse::notFound('Questionnaire not found');
         }
 
-        if (! $this->canManage($request)) {
+        if (! $this->canManage($request, $store)) {
             return ApiResponse::forbidden('Only franchise admins and store managers can manage questionnaires.');
         }
 
@@ -85,8 +103,12 @@ class QuestionnaireTemplateController extends Controller
         return $questionnaire->store_id === $store->id;
     }
 
-    private function canManage(Request $request): bool
+    private function canManage(Request $request, Store $store): bool
     {
-        return in_array($request->user()->role, ['franchise_admin', 'store_manager'], true);
+        return in_array(
+            $this->storeAccessService->getUserRoleAtStore($request->user(), $store),
+            ['franchise_admin', 'store_manager'],
+            true
+        );
     }
 }

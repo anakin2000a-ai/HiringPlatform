@@ -6,6 +6,7 @@ use App\Models\FranchiseAccount;
 use App\Models\HiringWorkflow;
 use App\Models\Store;
 use App\Models\User;
+use App\Models\UserStoreAccess;
 use App\Models\WorkflowStage;
 use App\Models\WorkflowStageTransition;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,7 +24,8 @@ class WorkflowTransitionTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $admin = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $store->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
         $workflow = HiringWorkflow::factory()->forStore($store)->create();
 
         return [$franchise, $store, $admin, $workflow];
@@ -81,7 +83,8 @@ class WorkflowTransitionTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $admin = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $store->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
 
         $workflowA = HiringWorkflow::factory()->forStore($store)->create();
         $workflowB = HiringWorkflow::factory()->forStore($store)->create();
@@ -102,7 +105,8 @@ class WorkflowTransitionTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $admin = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $store->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
 
         $workflowA = HiringWorkflow::factory()->forStore($store)->create();
         $workflowB = HiringWorkflow::factory()->forStore($store)->create();
@@ -221,7 +225,8 @@ class WorkflowTransitionTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $admin = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $store->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
 
         $workflowA = HiringWorkflow::factory()->forStore($store)->create();
         $workflowB = HiringWorkflow::factory()->forStore($store)->create();
@@ -244,7 +249,7 @@ class WorkflowTransitionTest extends TestCase
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
         $workflow = HiringWorkflow::factory()->forStore($store)->create();
-        $manager = User::factory()->storeManager()->create(['franchise_account_id' => $franchise->id]);
+        $manager = User::factory()->create();
         // No UserStoreAccess
 
         $this->actingAs($manager)

@@ -65,7 +65,8 @@ class NatsAlignmentTest extends TestCase
     {
         $franchise   = FranchiseAccount::factory()->create();
         $store       = Store::factory()->for($franchise)->create();
-        $admin       = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $admin       = User::factory()->create();
+        \App\Models\UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $store->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
 
         $workflow  = HiringWorkflow::factory()->forStore($store)->create();
         $applied   = WorkflowStage::factory()->forWorkflow($workflow)->initial()->create([

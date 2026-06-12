@@ -14,13 +14,32 @@ class StoreManagementTest extends TestCase
     use RefreshDatabase;
 
     // -----------------------------------------------------------------------
+    // Helpers
+    // -----------------------------------------------------------------------
+
+    private function makeFranchiseAdmin(FranchiseAccount $franchise, Store $anchorStore): User
+    {
+        $admin = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $anchorStore->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
+        return $admin;
+    }
+
+    private function makeStoreManager(Store $store): User
+    {
+        $manager = User::factory()->create();
+        UserStoreAccess::create(['user_id' => $manager->id, 'store_id' => $store->id, 'role' => 'store_manager', 'access_scope' => 'store', 'status' => 'active']);
+        return $manager;
+    }
+
+    // -----------------------------------------------------------------------
     // Create
     // -----------------------------------------------------------------------
 
     public function test_franchise_admin_can_create_a_store(): void
     {
         $franchise = FranchiseAccount::factory()->create();
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $anchorStore = Store::factory()->for($franchise)->create();
+        $admin = $this->makeFranchiseAdmin($franchise, $anchorStore);
 
         $response = $this->actingAs($admin)->postJson('/api/v1/stores', [
             'store_name' => 'Main Street Store',
@@ -38,7 +57,8 @@ class StoreManagementTest extends TestCase
     public function test_store_is_scoped_to_the_creating_admins_franchise(): void
     {
         $franchise = FranchiseAccount::factory()->create();
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $anchorStore = Store::factory()->for($franchise)->create();
+        $admin = $this->makeFranchiseAdmin($franchise, $anchorStore);
 
         $this->actingAs($admin)->postJson('/api/v1/stores', ['store_name' => 'New Store']);
 
@@ -48,7 +68,8 @@ class StoreManagementTest extends TestCase
     public function test_store_manager_cannot_create_a_store(): void
     {
         $franchise = FranchiseAccount::factory()->create();
-        $manager = User::factory()->storeManager()->create(['franchise_account_id' => $franchise->id]);
+        $store = Store::factory()->for($franchise)->create();
+        $manager = $this->makeStoreManager($store);
 
         $this->actingAs($manager)
             ->postJson('/api/v1/stores', ['store_name' => 'New Store'])
@@ -58,7 +79,8 @@ class StoreManagementTest extends TestCase
     public function test_create_store_requires_store_name(): void
     {
         $franchise = FranchiseAccount::factory()->create();
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $anchorStore = Store::factory()->for($franchise)->create();
+        $admin = $this->makeFranchiseAdmin($franchise, $anchorStore);
 
         $this->actingAs($admin)
             ->postJson('/api/v1/stores', [])
@@ -74,7 +96,7 @@ class StoreManagementTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create(['store_name' => 'West Branch']);
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $admin = $this->makeFranchiseAdmin($franchise, $store);
 
         $this->actingAs($admin)
             ->getJson("/api/v1/stores/{$store->id}")
@@ -91,7 +113,7 @@ class StoreManagementTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create(['store_name' => 'Old Name']);
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $admin = $this->makeFranchiseAdmin($franchise, $store);
 
         $this->actingAs($admin)
             ->patchJson("/api/v1/stores/{$store->id}", ['store_name' => 'New Name'])
@@ -105,10 +127,8 @@ class StoreManagementTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
-        $manager = User::factory()->storeManager()->create(['franchise_account_id' => $franchise->id]);
-        UserStoreAccess::create(['user_id' => $manager->id, 'store_id' => $store->id]);
+        $manager = $this->makeStoreManager($store);
 
-        // Middleware allows access; role check in controller blocks modification
         $this->actingAs($manager)
             ->patchJson("/api/v1/stores/{$store->id}", ['store_name' => 'Hacked Name'])
             ->assertForbidden();
@@ -118,10 +138,10 @@ class StoreManagementTest extends TestCase
     {
         $franchiseA = FranchiseAccount::factory()->create();
         $franchiseB = FranchiseAccount::factory()->create();
+        $storeA = Store::factory()->for($franchiseA)->create();
         $storeB = Store::factory()->for($franchiseB)->create();
-        $adminA = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchiseA->id]);
+        $adminA = $this->makeFranchiseAdmin($franchiseA, $storeA);
 
-        // Middleware blocks because admin cannot access franchiseB's store
         $this->actingAs($adminA)
             ->patchJson("/api/v1/stores/{$storeB->id}", ['store_name' => 'Hacked'])
             ->assertForbidden();
@@ -135,7 +155,7 @@ class StoreManagementTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
-        $admin = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $admin = $this->makeFranchiseAdmin($franchise, $store);
 
         $this->actingAs($admin)
             ->deleteJson("/api/v1/stores/{$store->id}")
@@ -148,8 +168,7 @@ class StoreManagementTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
-        $manager = User::factory()->storeManager()->create(['franchise_account_id' => $franchise->id]);
-        UserStoreAccess::create(['user_id' => $manager->id, 'store_id' => $store->id]);
+        $manager = $this->makeStoreManager($store);
 
         $this->actingAs($manager)
             ->deleteJson("/api/v1/stores/{$store->id}")
@@ -160,8 +179,9 @@ class StoreManagementTest extends TestCase
     {
         $franchiseA = FranchiseAccount::factory()->create();
         $franchiseB = FranchiseAccount::factory()->create();
+        $storeA = Store::factory()->for($franchiseA)->create();
         $storeB = Store::factory()->for($franchiseB)->create();
-        $adminA = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchiseA->id]);
+        $adminA = $this->makeFranchiseAdmin($franchiseA, $storeA);
 
         $this->actingAs($adminA)
             ->deleteJson("/api/v1/stores/{$storeB->id}")

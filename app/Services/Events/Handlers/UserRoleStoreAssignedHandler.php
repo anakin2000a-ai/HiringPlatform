@@ -11,19 +11,20 @@ use RuntimeException;
 
 class UserRoleStoreAssignedHandler implements EventHandlerInterface
 {
+    private const ALLOWED_ROLES = ['franchise_admin', 'store_manager', 'recruiter', 'viewer'];
+
     /**
      * Handle auth.v1.assignment.user_role_store.assigned.
      *
      * Supports two payload shapes:
-     *   Shape A — data.assignment.{user_id, store_id, role_id, is_active, metadata}
-     *   Shape B — data.{user_id, store_id, role_id, is_active, metadata}
+     *   Shape A — data.assignment.{user_id, store_id, role, access_scope, ...}
+     *   Shape B — data.{user_id, store_id, role, access_scope, ...}
      *
-     * The local user_store_access table has only (user_id, store_id); role_id,
-     * metadata, and is_active have no columns and are silently ignored.
+     * role defaults to 'viewer', access_scope defaults to 'store' when absent.
+     * status is always set to 'active' on creation.
      *
      * Fails with RuntimeException (retryable) if the referenced user or store
-     * does not yet exist locally — the event will be retried after the
-     * user.created / store.created event arrives.
+     * does not yet exist locally.
      */
     public function handle(array $data): void
     {
@@ -41,11 +42,18 @@ class UserRoleStoreAssignedHandler implements EventHandlerInterface
         $this->assertUserExists((int) $userId);
         $this->assertStoreExists((int) $storeId);
 
-        DB::transaction(static function () use ($userId, $storeId): void {
-            UserStoreAccess::firstOrCreate([
-                'user_id'  => (int) $userId,
-                'store_id' => (int) $storeId,
-            ]);
+        $role  = (isset($assignment['role']) && in_array($assignment['role'], self::ALLOWED_ROLES, true))
+            ? $assignment['role']
+            : 'viewer';
+        $scope = (isset($assignment['access_scope']) && in_array($assignment['access_scope'], ['franchise', 'store'], true))
+            ? $assignment['access_scope']
+            : 'store';
+
+        DB::transaction(static function () use ($userId, $storeId, $role, $scope): void {
+            UserStoreAccess::firstOrCreate(
+                ['user_id' => (int) $userId, 'store_id' => (int) $storeId],
+                ['role' => $role, 'access_scope' => $scope, 'status' => 'active']
+            );
         });
     }
 

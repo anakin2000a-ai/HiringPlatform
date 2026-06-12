@@ -30,11 +30,28 @@ class StageDocumentRequirementController extends Controller
             return ApiResponse::forbidden();
         }
 
-        $requirements = StageDocumentRequirement::where('workflow_stage_id', $stage->id)
-            ->with('documentTemplate')
-            ->get();
+        $request->validate([
+            'per_page'             => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'is_required'          => ['sometimes', 'boolean'],
+            'document_template_id' => ['sometimes', 'integer'],
+        ]);
 
-        return ApiResponse::success(StageDocumentRequirementResource::collection($requirements));
+        $query = StageDocumentRequirement::where('workflow_stage_id', $stage->id)
+            ->with('documentTemplate');
+
+        if ($request->has('is_required')) {
+            $query->where('is_required', $request->boolean('is_required'));
+        }
+        if ($request->filled('document_template_id')) {
+            $query->where('document_template_id', $request->integer('document_template_id'));
+        }
+
+        $requirements = $query->orderBy('id')
+            ->paginate($request->integer('per_page', 20));
+
+        return ApiResponse::success(
+            StageDocumentRequirementResource::collection($requirements)->response()->getData(true)
+        );
     }
 
     public function store(CreateStageDocumentRequirementRequest $request, WorkflowStage $stage): JsonResponse
@@ -46,7 +63,7 @@ class StageDocumentRequirementController extends Controller
             return ApiResponse::forbidden();
         }
 
-        if (! $this->canManage($request)) {
+        if (! $this->canManage($request, $store)) {
             return ApiResponse::forbidden('Only franchise admins and store managers can manage document requirements.');
         }
 
@@ -79,7 +96,7 @@ class StageDocumentRequirementController extends Controller
             return ApiResponse::forbidden();
         }
 
-        if (! $this->canManage($request)) {
+        if (! $this->canManage($request, $store)) {
             return ApiResponse::forbidden('Only franchise admins and store managers can manage document requirements.');
         }
 
@@ -97,7 +114,7 @@ class StageDocumentRequirementController extends Controller
             return ApiResponse::forbidden();
         }
 
-        if (! $this->canManage($request)) {
+        if (! $this->canManage($request, $store)) {
             return ApiResponse::forbidden('Only franchise admins and store managers can manage document requirements.');
         }
 
@@ -106,8 +123,12 @@ class StageDocumentRequirementController extends Controller
         return ApiResponse::success(message: 'Stage document requirement deleted');
     }
 
-    private function canManage(Request $request): bool
+    private function canManage(Request $request, \App\Models\Store $store): bool
     {
-        return in_array($request->user()->role, ['franchise_admin', 'store_manager'], true);
+        return in_array(
+            $this->storeAccessService->getUserRoleAtStore($request->user(), $store),
+            ['franchise_admin', 'store_manager'],
+            true
+        );
     }
 }

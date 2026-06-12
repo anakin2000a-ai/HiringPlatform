@@ -9,7 +9,7 @@ class UserStoreAccess extends Model
 {
     protected $table = 'user_store_access';
 
-    protected $fillable = ['user_id', 'store_id'];
+    protected $fillable = ['user_id', 'store_id', 'role', 'access_scope', 'status'];
 
     public function user(): BelongsTo
     {
@@ -19,5 +19,15 @@ class UserStoreAccess extends Model
     public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
+    }
+
+    public function isFranchiseScope(): bool
+    {
+        return $this->access_scope === 'franchise';
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === 'active';
     }
 }

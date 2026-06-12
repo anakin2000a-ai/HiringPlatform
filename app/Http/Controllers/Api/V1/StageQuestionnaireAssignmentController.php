@@ -9,12 +9,16 @@ use App\Http\Responses\ApiResponse;
 use App\Models\HiringWorkflow;
 use App\Models\Store;
 use App\Models\WorkflowStage;
+use App\Services\AccessControl\StoreAccessService;
 use App\Services\Questionnaires\StageQuestionnaireAssignmentService;
 use Illuminate\Http\JsonResponse;
 
 class StageQuestionnaireAssignmentController extends Controller
 {
-    public function __construct(private readonly StageQuestionnaireAssignmentService $assignmentService) {}
+    public function __construct(
+        private readonly StageQuestionnaireAssignmentService $assignmentService,
+        private readonly StoreAccessService $storeAccessService,
+    ) {}
 
     public function store(
         AssignQuestionnaireToStageRequest $request,
@@ -30,7 +34,7 @@ class StageQuestionnaireAssignmentController extends Controller
             return ApiResponse::notFound('Stage not found');
         }
 
-        if (! $this->canManage($request)) {
+        if (! $this->canManage($request, $store)) {
             return ApiResponse::forbidden('Only franchise admins and store managers can assign questionnaires to stages.');
         }
 
@@ -52,8 +56,12 @@ class StageQuestionnaireAssignmentController extends Controller
         return $stage->hiring_workflow_id === $workflow->id;
     }
 
-    private function canManage(\Illuminate\Http\Request $request): bool
+    private function canManage(\Illuminate\Http\Request $request, Store $store): bool
     {
-        return in_array($request->user()->role, ['franchise_admin', 'store_manager'], true);
+        return in_array(
+            $this->storeAccessService->getUserRoleAtStore($request->user(), $store),
+            ['franchise_admin', 'store_manager'],
+            true
+        );
     }
 }

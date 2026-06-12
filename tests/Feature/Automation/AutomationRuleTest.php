@@ -28,7 +28,8 @@ class AutomationRuleTest extends TestCase
     {
         $franchise = FranchiseAccount::factory()->create();
         $store     = Store::factory()->for($franchise)->create();
-        $admin     = User::factory()->franchiseAdmin()->create(['franchise_account_id' => $franchise->id]);
+        $admin     = User::factory()->create();
+        \App\Models\UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $store->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
 
         return [$franchise, $store, $admin];
     }
@@ -66,10 +67,13 @@ class AutomationRuleTest extends TestCase
 
     private function actingAsManager(Store $store): User
     {
-        $manager = User::factory()->create(['role' => 'store_manager']);
+        $manager = User::factory()->create();
         \App\Models\UserStoreAccess::create([
-            'user_id'  => $manager->id,
-            'store_id' => $store->id,
+            'user_id'      => $manager->id,
+            'store_id'     => $store->id,
+            'role'         => 'store_manager',
+            'access_scope' => 'store',
+            'status'       => 'active',
         ]);
 
         return $manager;
@@ -160,8 +164,8 @@ class AutomationRuleTest extends TestCase
     public function test_non_manager_cannot_create_automation_rule(): void
     {
         [, $store] = $this->makeStore();
-        $viewer = User::factory()->create(['role' => 'viewer']);
-        \App\Models\UserStoreAccess::create(['user_id' => $viewer->id, 'store_id' => $store->id]);
+        $viewer = User::factory()->create();
+        \App\Models\UserStoreAccess::create(['user_id' => $viewer->id, 'store_id' => $store->id, 'role' => 'viewer', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->actingAs($viewer)
             ->postJson("/api/v1/stores/{$store->id}/automation-rules", [
@@ -289,8 +293,8 @@ class AutomationRuleTest extends TestCase
     {
         [, $store] = $this->makeStore();
         $rule    = $this->makeRule($store);
-        $viewer  = User::factory()->create(['role' => 'viewer']);
-        \App\Models\UserStoreAccess::create(['user_id' => $viewer->id, 'store_id' => $store->id]);
+        $viewer  = User::factory()->create();
+        \App\Models\UserStoreAccess::create(['user_id' => $viewer->id, 'store_id' => $store->id, 'role' => 'viewer', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->actingAs($viewer)
             ->patchJson("/api/v1/automation-rules/{$rule->id}", ['name' => 'Hack'])
@@ -328,8 +332,8 @@ class AutomationRuleTest extends TestCase
     {
         [, $store] = $this->makeStore();
         $rule    = $this->makeRule($store);
-        $viewer  = User::factory()->create(['role' => 'viewer']);
-        \App\Models\UserStoreAccess::create(['user_id' => $viewer->id, 'store_id' => $store->id]);
+        $viewer  = User::factory()->create();
+        \App\Models\UserStoreAccess::create(['user_id' => $viewer->id, 'store_id' => $store->id, 'role' => 'viewer', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->actingAs($viewer)
             ->deleteJson("/api/v1/automation-rules/{$rule->id}")
