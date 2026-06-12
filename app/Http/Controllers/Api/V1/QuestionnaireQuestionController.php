@@ -66,7 +66,7 @@ class QuestionnaireQuestionController extends Controller
         }
 
         if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can manage questionnaire questions.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $question = $this->questionService->create($questionnaire, $request->validated());
@@ -85,7 +85,7 @@ class QuestionnaireQuestionController extends Controller
         }
 
         if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can manage questionnaire questions.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $question = $this->questionService->update($question, $request->validated());
@@ -104,7 +104,7 @@ class QuestionnaireQuestionController extends Controller
         }
 
         if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can manage questionnaire questions.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $this->questionService->delete($question);
@@ -124,10 +124,6 @@ class QuestionnaireQuestionController extends Controller
 
     private function canManage(Request $request, Store $store): bool
     {
-        return in_array(
-            $this->storeAccessService->getUserRoleAtStore($request->user(), $store),
-            ['franchise_admin', 'store_manager'],
-            true
-        );
+        return $this->storeAccessService->canAccessStore($request->user(), $store);
     }
 }

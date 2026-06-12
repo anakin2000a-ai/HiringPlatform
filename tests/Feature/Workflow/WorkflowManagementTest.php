@@ -72,7 +72,7 @@ class WorkflowManagementTest extends TestCase
             ->assertCreated();
     }
 
-    public function test_recruiter_cannot_create_a_workflow(): void
+    public function test_recruiter_can_create_a_workflow(): void
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
@@ -81,10 +81,10 @@ class WorkflowManagementTest extends TestCase
 
         $this->actingAs($recruiter)
             ->postJson("/api/v1/stores/{$store->store_name}/workflows", ['name' => 'Attempted'])
-            ->assertForbidden();
+            ->assertCreated();
     }
 
-    public function test_viewer_cannot_create_a_workflow(): void
+    public function test_viewer_can_create_a_workflow(): void
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
@@ -93,7 +93,7 @@ class WorkflowManagementTest extends TestCase
 
         $this->actingAs($viewer)
             ->postJson("/api/v1/stores/{$store->store_name}/workflows", ['name' => 'Attempted'])
-            ->assertForbidden();
+            ->assertCreated();
     }
 
     // -----------------------------------------------------------------------
@@ -303,14 +303,14 @@ class WorkflowManagementTest extends TestCase
         $this->assertDatabaseMissing('hiring_workflows', ['id' => $workflow->id]);
     }
 
-    public function test_store_manager_cannot_delete_workflow(): void
+    public function test_store_manager_can_delete_workflow(): void
     {
         [, $store, $manager] = $this->makeManagerAndStore();
         $workflow = HiringWorkflow::factory()->forStore($store)->create();
 
         $this->actingAs($manager)
             ->deleteJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}")
-            ->assertForbidden();
+            ->assertOk();
     }
 
     // -----------------------------------------------------------------------

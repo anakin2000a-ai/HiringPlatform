@@ -24,27 +24,41 @@ class CreateJobOpeningRequest extends FormRequest
         ];
     }
 
-    public function withValidator(Validator $validator): void
-    {
-        $validator->after(function (Validator $v): void {
-            $workflowId = $this->input('hiring_workflow_id');
+   public function withValidator(Validator $validator): void
+{
+    $validator->after(function (Validator $v): void {
+        $workflowId = $this->input('hiring_workflow_id');
 
-            if (! $workflowId || $v->errors()->has('hiring_workflow_id')) {
-                return;
-            }
+        if (! $workflowId || $v->errors()->has('hiring_workflow_id')) {
+            return;
+        }
 
-            $store = $this->route('store');
+        $store = $this->route('store');
 
-            $belongs = HiringWorkflow::where('id', $workflowId)
-                ->where('store_id', $store->id)
-                ->exists();
+        $belongs = HiringWorkflow::where('id', $workflowId)
+            ->where('store_id', $store->id)
+            ->exists();
 
-            if (! $belongs) {
-                $v->errors()->add(
-                    'hiring_workflow_id',
-                    'The selected workflow does not belong to this store.'
-                );
-            }
-        });
-    }
+        if (! $belongs) {
+            $v->errors()->add(
+                'hiring_workflow_id',
+                'The selected workflow does not belong to this store.'
+            );
+
+            return;
+        }
+
+        $exists = \App\Models\JobOpening::where('store_id', $store->id)
+            ->where('title', $this->input('title'))
+            ->where('status', 'published')
+            ->exists();
+
+        if ($exists) {
+            $v->errors()->add(
+                'title',
+                'A published job opening with this title already exists for this store.'
+            );
+        }
+    });
+}
 }

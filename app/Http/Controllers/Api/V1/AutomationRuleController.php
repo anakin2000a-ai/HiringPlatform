@@ -61,7 +61,7 @@ class AutomationRuleController extends Controller
     public function store(CreateAutomationRuleRequest $request, Store $store): JsonResponse
     {
         if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can manage automation rules.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $data = $request->validated();
@@ -97,7 +97,7 @@ class AutomationRuleController extends Controller
         }
 
         if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can manage automation rules.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $data = $request->validated();
@@ -128,7 +128,7 @@ class AutomationRuleController extends Controller
         }
 
         if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can manage automation rules.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $this->ruleService->delete($automationRule);
@@ -168,10 +168,6 @@ class AutomationRuleController extends Controller
 
     private function canManage(Request $request, Store $store): bool
     {
-        return in_array(
-            $this->storeAccessService->getUserRoleAtStore($request->user(), $store),
-            ['franchise_admin', 'store_manager'],
-            true
-        );
+        return $this->storeAccessService->canAccessStore($request->user(), $store);
     }
 }

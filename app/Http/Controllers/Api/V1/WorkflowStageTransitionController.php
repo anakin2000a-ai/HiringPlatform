@@ -66,7 +66,7 @@ class WorkflowStageTransitionController extends Controller
         }
 
         if (! $this->canManageWorkflows($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can manage workflow transitions.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $validated = $request->validated();
@@ -98,7 +98,7 @@ class WorkflowStageTransitionController extends Controller
         }
 
         if (! $this->canManageWorkflows($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can manage workflow transitions.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $validated = $request->validated();
@@ -127,7 +127,7 @@ class WorkflowStageTransitionController extends Controller
         }
 
         if (! $this->canManageWorkflows($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can manage workflow transitions.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $transition->delete();
@@ -147,10 +147,6 @@ class WorkflowStageTransitionController extends Controller
 
     private function canManageWorkflows(Request $request, Store $store): bool
     {
-        return in_array(
-            $this->storeAccessService->getUserRoleAtStore($request->user(), $store),
-            ['franchise_admin', 'store_manager'],
-            true
-        );
+        return $this->storeAccessService->canAccessStore($request->user(), $store);
     }
 }

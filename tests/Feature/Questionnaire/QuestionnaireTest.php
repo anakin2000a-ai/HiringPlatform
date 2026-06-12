@@ -56,7 +56,7 @@ class QuestionnaireTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
-    // Questionnaire template — CRUD
+    // Questionnaire template â€” CRUD
     // -----------------------------------------------------------------------
 
     public function test_can_create_questionnaire_template(): void
@@ -185,7 +185,7 @@ class QuestionnaireTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
-    // Questionnaire template — authorization
+    // Questionnaire template â€” authorization
     // -----------------------------------------------------------------------
 
     public function test_cannot_create_questionnaire_for_inaccessible_store(): void
@@ -199,7 +199,7 @@ class QuestionnaireTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_recruiter_cannot_create_questionnaire(): void
+    public function test_recruiter_can_create_questionnaire(): void
     {
         [$franchise, $store] = $this->makeStore();
         $recruiter = User::factory()->create();
@@ -207,7 +207,7 @@ class QuestionnaireTest extends TestCase
 
         $this->actingAs($recruiter)
             ->postJson("/api/v1/stores/{$store->store_name}/questionnaires", ['name' => 'Q'])
-            ->assertForbidden();
+            ->assertCreated();
     }
 
     public function test_unauthenticated_cannot_access_questionnaire_routes(): void
@@ -219,7 +219,7 @@ class QuestionnaireTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
-    // Questions — CRUD
+    // Questions â€” CRUD
     // -----------------------------------------------------------------------
 
     public function test_can_create_questionnaire_question(): void
@@ -428,7 +428,7 @@ class QuestionnaireTest extends TestCase
         $workflowB = HiringWorkflow::factory()->forStore($storeB)->create();
         $stageB    = WorkflowStage::factory()->forWorkflow($workflowB)->initial()->create();
 
-        // Use store route but stage belongs to storeB's workflow — workflow not found
+        // Use store route but stage belongs to storeB's workflow â€” workflow not found
         $workflowA = HiringWorkflow::factory()->forStore($store)->create();
 
         $this->actingAs($admin)
@@ -475,7 +475,7 @@ class QuestionnaireTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
-    // Applicant answers — submission
+    // Applicant answers â€” submission
     // -----------------------------------------------------------------------
 
     public function test_applicant_can_submit_answers(): void
@@ -585,7 +585,7 @@ class QuestionnaireTest extends TestCase
 
         [, , , $application] = $this->makeApplication($store);
 
-        // Submit only the optional question — required one missing
+        // Submit only the optional question â€” required one missing
         $this->actingAs($admin)
             ->postJson("/api/v1/stores/{$store->store_name}/applications/{$application->id}/answers", [
                 'questionnaire_template_id' => $questionnaire->id,
@@ -638,7 +638,7 @@ class QuestionnaireTest extends TestCase
             ])
             ->assertCreated();
 
-        // Second submission — same question, different answer
+        // Second submission â€” same question, different answer
         $this->actingAs($admin)
             ->postJson("/api/v1/stores/{$store->store_name}/applications/{$application->id}/answers", [
                 'questionnaire_template_id' => $questionnaire->id,
@@ -711,7 +711,7 @@ class QuestionnaireTest extends TestCase
         $questionnaire = $this->makeQuestionnaire($store);
         $question      = $this->makeQuestion($questionnaire);
         $manager = User::factory()->create();
-        // No UserStoreAccess — all requests should be blocked by store.access middleware
+        // No UserStoreAccess â€” all requests should be blocked by store.access middleware
 
         $id = $questionnaire->id;
         $qid = $question->id;

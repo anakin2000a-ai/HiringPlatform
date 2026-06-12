@@ -64,7 +64,7 @@ class StageDocumentRequirementController extends Controller
         }
 
         if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can manage document requirements.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $requirement = $this->requirementService->create($stage, $request->validated());
@@ -97,7 +97,7 @@ class StageDocumentRequirementController extends Controller
         }
 
         if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can manage document requirements.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $requirement = $this->requirementService->update($requirement, $request->validated());
@@ -115,7 +115,7 @@ class StageDocumentRequirementController extends Controller
         }
 
         if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can manage document requirements.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $this->requirementService->delete($requirement);
@@ -125,10 +125,6 @@ class StageDocumentRequirementController extends Controller
 
     private function canManage(Request $request, \App\Models\Store $store): bool
     {
-        return in_array(
-            $this->storeAccessService->getUserRoleAtStore($request->user(), $store),
-            ['franchise_admin', 'store_manager'],
-            true
-        );
+        return $this->storeAccessService->canAccessStore($request->user(), $store);
     }
 }

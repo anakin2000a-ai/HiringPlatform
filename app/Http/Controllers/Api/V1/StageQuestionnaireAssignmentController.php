@@ -35,7 +35,7 @@ class StageQuestionnaireAssignmentController extends Controller
         }
 
         if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can assign questionnaires to stages.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $assignment = $this->assignmentService->assign($store, $stage, $request->validated());
@@ -58,10 +58,6 @@ class StageQuestionnaireAssignmentController extends Controller
 
     private function canManage(\Illuminate\Http\Request $request, Store $store): bool
     {
-        return in_array(
-            $this->storeAccessService->getUserRoleAtStore($request->user(), $store),
-            ['franchise_admin', 'store_manager'],
-            true
-        );
+        return $this->storeAccessService->canAccessStore($request->user(), $store);
     }
 }

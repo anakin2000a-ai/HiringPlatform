@@ -132,7 +132,9 @@ class StoreAccessTest extends TestCase
         Store::factory()->for($franchiseB)->count(2)->create();
 
         $admin = User::factory()->create();
-        UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $storesA->first()->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
+        foreach ($storesA as $s) {
+            UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $s->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
+        }
 
         $response = $this->actingAs($admin)->getJson('/api/v1/stores');
 
@@ -155,6 +157,61 @@ class StoreAccessTest extends TestCase
         $ids = collect($response->json('data.data'))->pluck('id');
         $this->assertTrue($ids->contains($assignedStore->id));
         $this->assertFalse($ids->contains($otherStore->id));
+    }
+
+    // -----------------------------------------------------------------------
+    // Role-agnostic access: any active user_store_access grants management
+    // -----------------------------------------------------------------------
+
+    public function test_user_with_viewer_role_can_manage_store_resources(): void
+    {
+        // Case A: user_store_access exists with role = viewer → allowed
+        $franchise = FranchiseAccount::factory()->create();
+        $store = Store::factory()->for($franchise)->create();
+        $user = User::factory()->create();
+        UserStoreAccess::create([
+            'user_id'      => $user->id,
+            'store_id'     => $store->id,
+            'role'         => 'viewer',
+            'access_scope' => 'store',
+            'status'       => 'active',
+        ]);
+
+        $this->actingAs($user)
+            ->postJson("/api/v1/stores/{$store->store_name}/workflows", ['name' => 'Viewer Workflow'])
+            ->assertCreated();
+    }
+
+    public function test_user_with_empty_role_can_manage_store_resources(): void
+    {
+        // Case B: user_store_access exists with role = '' → allowed (role is irrelevant)
+        $franchise = FranchiseAccount::factory()->create();
+        $store = Store::factory()->for($franchise)->create();
+        $user = User::factory()->create();
+        UserStoreAccess::create([
+            'user_id'      => $user->id,
+            'store_id'     => $store->id,
+            'role'         => '',
+            'access_scope' => 'store',
+            'status'       => 'active',
+        ]);
+
+        $this->actingAs($user)
+            ->postJson("/api/v1/stores/{$store->store_name}/workflows", ['name' => 'Empty Role Workflow'])
+            ->assertCreated();
+    }
+
+    public function test_user_without_store_access_cannot_manage_store_resources(): void
+    {
+        // Case C: no user_store_access row → 403
+        $franchise = FranchiseAccount::factory()->create();
+        $store = Store::factory()->for($franchise)->create();
+        $user = User::factory()->create();
+        // No UserStoreAccess created
+
+        $this->actingAs($user)
+            ->postJson("/api/v1/stores/{$store->store_name}/workflows", ['name' => 'No Access Workflow'])
+            ->assertForbidden();
     }
 
     // -----------------------------------------------------------------------

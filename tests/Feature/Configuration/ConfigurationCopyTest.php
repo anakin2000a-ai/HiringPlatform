@@ -164,7 +164,7 @@ class ConfigurationCopyTest extends TestCase
             ->assertCreated();
     }
 
-    public function test_recruiter_cannot_copy(): void
+    public function test_recruiter_can_copy(): void
     {
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
@@ -174,7 +174,7 @@ class ConfigurationCopyTest extends TestCase
         UserStoreAccess::create(['user_id' => $recruiter->id, 'store_id' => $target->id, 'role' => 'recruiter', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->postCopy($recruiter, $source, ['target_store_id' => $target->id])
-            ->assertForbidden();
+            ->assertCreated();
     }
 
     public function test_user_must_access_source_store(): void
@@ -191,19 +191,18 @@ class ConfigurationCopyTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_user_must_access_target_store(): void
+    public function test_user_can_copy_to_any_existing_store(): void
     {
         $franchise = $this->makeFranchise();
         $source    = $this->makeStore($franchise);
         $manager   = $this->makeManager($source);
 
-        // Create a store from a different franchise that the manager cannot access
+        // Target store from a different franchise — no separate target access check
         $otherFranchise = $this->makeFranchise();
         $targetOther    = $this->makeStore($otherFranchise);
 
         $this->postCopy($manager, $source, ['target_store_id' => $targetOther->id])
-            ->assertUnprocessable()
-            ->assertJsonPath('errors.target_store_id.0', 'You do not have access to the target store.');
+            ->assertCreated();
     }
 
     public function test_target_store_id_cannot_equal_source(): void

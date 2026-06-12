@@ -21,7 +21,7 @@ class ConfigurationCopyController extends Controller
     public function copy(CopyStoreConfigurationRequest $request, Store $store): JsonResponse
     {
         if (! $this->canManage($request->user(), $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can copy configuration.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $data        = $request->validated();
@@ -42,10 +42,6 @@ class ConfigurationCopyController extends Controller
 
     private function canManage(\App\Models\User $user, Store $store): bool
     {
-        return in_array(
-            $this->storeAccessService->getUserRoleAtStore($user, $store),
-            ['franchise_admin', 'store_manager'],
-            true
-        );
+        return $this->storeAccessService->canAccessStore($user, $store);
     }
 }

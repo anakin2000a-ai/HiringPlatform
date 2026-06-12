@@ -71,10 +71,8 @@ class StoreController extends Controller
 
     public function update(UpdateStoreRequest $request, Store $store): JsonResponse
     {
-        $role = $this->storeAccessService->getUserRoleAtStore($request->user(), $store);
-
-        if ($role !== 'franchise_admin') {
-            return ApiResponse::forbidden('Only franchise admins can update stores');
+        if (! $this->storeAccessService->canAccessStore($request->user(), $store)) {
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $store->update($request->validated());
@@ -84,10 +82,8 @@ class StoreController extends Controller
 
     public function destroy(Request $request, Store $store): JsonResponse
     {
-        $role = $this->storeAccessService->getUserRoleAtStore($request->user(), $store);
-
-        if ($role !== 'franchise_admin') {
-            return ApiResponse::forbidden('Only franchise admins can delete stores');
+        if (! $this->storeAccessService->canAccessStore($request->user(), $store)) {
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $store->delete();

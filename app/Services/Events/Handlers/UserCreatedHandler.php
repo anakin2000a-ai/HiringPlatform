@@ -53,8 +53,7 @@ class UserCreatedHandler implements EventHandlerInterface
                 'id'       => $id,
                 'name'     => $name,
                 'email'    => $email,
-                'password' => bcrypt(Str::random(32)),
-            ]);
+             ]);
         });
     }
 }

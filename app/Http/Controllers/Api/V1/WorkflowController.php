@@ -53,7 +53,7 @@ class WorkflowController extends Controller
     public function store(CreateWorkflowRequest $request, Store $store): JsonResponse
     {
         if (! $this->canManageWorkflows($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can manage workflows.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $workflow = $this->workflowService->create($store, $request->validated(), $request->user());
@@ -77,7 +77,7 @@ class WorkflowController extends Controller
         }
 
         if (! $this->canManageWorkflows($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can manage workflows.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $workflow = $this->workflowService->update($workflow, $request->validated());
@@ -91,8 +91,8 @@ class WorkflowController extends Controller
             return ApiResponse::notFound('Workflow not found');
         }
 
-        if ($this->storeAccessService->getUserRoleAtStore($request->user(), $store) !== 'franchise_admin') {
-            return ApiResponse::forbidden('Only franchise admins can delete workflows.');
+        if (! $this->storeAccessService->canAccessStore($request->user(), $store)) {
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $this->workflowService->delete($workflow);
@@ -107,10 +107,6 @@ class WorkflowController extends Controller
 
     private function canManageWorkflows(Request $request, Store $store): bool
     {
-        return in_array(
-            $this->storeAccessService->getUserRoleAtStore($request->user(), $store),
-            ['franchise_admin', 'store_manager'],
-            true
-        );
+        return $this->storeAccessService->canAccessStore($request->user(), $store);
     }
 }

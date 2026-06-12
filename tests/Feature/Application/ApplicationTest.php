@@ -395,7 +395,7 @@ class ApplicationTest extends TestCase
             ->assertJsonStructure(['errors' => ['status']]);
     }
 
-    public function test_recruiter_cannot_update_application(): void
+    public function test_recruiter_can_update_application(): void
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
@@ -409,7 +409,7 @@ class ApplicationTest extends TestCase
 
         $this->actingAs($recruiter)
             ->patchJson("/api/v1/stores/{$store->store_name}/applications/{$application->id}", ['status' => 'rejected'])
-            ->assertForbidden();
+            ->assertOk();
     }
 
     // -----------------------------------------------------------------------

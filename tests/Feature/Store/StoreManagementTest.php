@@ -123,15 +123,15 @@ class StoreManagementTest extends TestCase
         $this->assertDatabaseHas('stores', ['id' => $store->id, 'store_name' => 'new-name']);
     }
 
-    public function test_store_manager_assigned_to_store_cannot_update_it(): void
+    public function test_store_manager_assigned_to_store_can_update_it(): void
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
         $manager = $this->makeStoreManager($store);
 
         $this->actingAs($manager)
-            ->patchJson("/api/v1/stores/{$store->store_name}", ['store_name' => 'Hacked Name'])
-            ->assertForbidden();
+            ->patchJson("/api/v1/stores/{$store->store_name}", ['store_name' => 'updated-name'])
+            ->assertOk();
     }
 
     public function test_franchise_admin_cannot_update_store_from_another_franchise(): void
@@ -164,7 +164,7 @@ class StoreManagementTest extends TestCase
         $this->assertDatabaseMissing('stores', ['id' => $store->id]);
     }
 
-    public function test_store_manager_assigned_to_store_cannot_delete_it(): void
+    public function test_store_manager_assigned_to_store_can_delete_it(): void
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
@@ -172,7 +172,7 @@ class StoreManagementTest extends TestCase
 
         $this->actingAs($manager)
             ->deleteJson("/api/v1/stores/{$store->store_name}")
-            ->assertForbidden();
+            ->assertOk();
     }
 
     public function test_franchise_admin_cannot_delete_store_from_another_franchise(): void

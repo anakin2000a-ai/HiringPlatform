@@ -80,7 +80,7 @@ class JobOpeningTest extends TestCase
             ->assertCreated();
     }
 
-    public function test_recruiter_cannot_create_job_opening(): void
+    public function test_recruiter_can_create_job_opening(): void
     {
         $franchise = FranchiseAccount::factory()->create();
         $store = Store::factory()->for($franchise)->create();
@@ -93,7 +93,7 @@ class JobOpeningTest extends TestCase
                 'hiring_workflow_id' => $workflow->id,
                 'title' => 'Cashier',
             ])
-            ->assertForbidden();
+            ->assertCreated();
     }
 
     public function test_cannot_create_job_opening_for_inaccessible_store(): void
@@ -364,14 +364,14 @@ class JobOpeningTest extends TestCase
         $this->assertDatabaseMissing('job_openings', ['id' => $job->id]);
     }
 
-    public function test_store_manager_cannot_delete_job_opening(): void
+    public function test_store_manager_can_delete_job_opening(): void
     {
         [, $store, $manager, $workflow] = $this->makeManagerContext();
         $job = JobOpening::factory()->withWorkflow($workflow)->create();
 
         $this->actingAs($manager)
             ->deleteJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}")
-            ->assertForbidden();
+            ->assertOk();
     }
 
     // -----------------------------------------------------------------------

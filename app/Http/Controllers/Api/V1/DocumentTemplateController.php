@@ -53,7 +53,7 @@ class DocumentTemplateController extends Controller
     public function store(CreateDocumentTemplateRequest $request, Store $store): JsonResponse
     {
         if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can manage document templates.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $template = $this->templateService->create($store, $request->validated(), $request->user());
@@ -80,7 +80,7 @@ class DocumentTemplateController extends Controller
         }
 
         if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can manage document templates.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $template = $this->templateService->update($documentTemplate, $request->validated());
@@ -95,7 +95,7 @@ class DocumentTemplateController extends Controller
         }
 
         if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can manage document templates.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $this->templateService->delete($documentTemplate);
@@ -110,10 +110,6 @@ class DocumentTemplateController extends Controller
 
     private function canManage(Request $request, Store $store): bool
     {
-        return in_array(
-            $this->storeAccessService->getUserRoleAtStore($request->user(), $store),
-            ['franchise_admin', 'store_manager'],
-            true
-        );
+        return $this->storeAccessService->canAccessStore($request->user(), $store);
     }
 }

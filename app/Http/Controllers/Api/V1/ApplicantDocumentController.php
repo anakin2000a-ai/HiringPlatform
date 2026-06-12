@@ -126,7 +126,7 @@ class ApplicantDocumentController extends Controller
         }
 
         if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can approve documents.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $document = $this->documentService->approve($document, $request->user());
@@ -144,7 +144,7 @@ class ApplicantDocumentController extends Controller
         }
 
         if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can reject documents.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $document = $this->documentService->reject(
@@ -158,10 +158,6 @@ class ApplicantDocumentController extends Controller
 
     private function canManage(Request $request, \App\Models\Store $store): bool
     {
-        return in_array(
-            $this->storeAccessService->getUserRoleAtStore($request->user(), $store),
-            ['franchise_admin', 'store_manager'],
-            true
-        );
+        return $this->storeAccessService->canAccessStore($request->user(), $store);
     }
 }

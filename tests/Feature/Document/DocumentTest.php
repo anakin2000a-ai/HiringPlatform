@@ -187,7 +187,7 @@ class DocumentTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_recruiter_cannot_create_document_template(): void
+    public function test_recruiter_can_create_document_template(): void
     {
         [$franchise, $store] = $this->makeStore();
         $recruiter = User::factory()->create();
@@ -198,7 +198,7 @@ class DocumentTest extends TestCase
                 'name'          => 'Doc',
                 'document_type' => 'contract',
             ])
-            ->assertForbidden();
+            ->assertCreated();
     }
 
     public function test_unauthenticated_cannot_access_document_template_routes(): void

@@ -102,7 +102,7 @@ class ApplicationController extends Controller
         }
 
         if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can update applications.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $application = $this->applicationService->update($application, $request->validated());
@@ -119,7 +119,7 @@ class ApplicationController extends Controller
         }
 
         if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can move application stages.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $application = $this->stageService->move(
@@ -176,10 +176,6 @@ class ApplicationController extends Controller
 
     private function canManage(Request $request, Store $store): bool
     {
-        return in_array(
-            $this->storeAccessService->getUserRoleAtStore($request->user(), $store),
-            ['franchise_admin', 'store_manager'],
-            true
-        );
+        return $this->storeAccessService->canAccessStore($request->user(), $store);
     }
 }

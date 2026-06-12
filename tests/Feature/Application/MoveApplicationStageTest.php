@@ -328,17 +328,16 @@ class MoveApplicationStageTest extends TestCase
             ->assertOk();
     }
 
-    public function test_recruiter_cannot_move_stage(): void
+    public function test_recruiter_can_move_stage(): void
     {
         [, $store, , , , $screening, , , , $application] = $this->makeSetup();
 
-        $franchise = FranchiseAccount::find($store->franchise_account_id);
         $recruiter = User::factory()->create();
         UserStoreAccess::create(['user_id' => $recruiter->id, 'store_id' => $store->id, 'role' => 'recruiter', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->actingAs($recruiter)
             ->postJson($this->moveUrl($store, $application), ['to_stage_id' => $screening->id])
-            ->assertForbidden();
+            ->assertOk();
     }
 
     public function test_unauthenticated_cannot_move_stage(): void

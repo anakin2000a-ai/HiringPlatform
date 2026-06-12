@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Configuration;
 
 use App\Models\Store;
-use App\Services\AccessControl\StoreAccessService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -35,19 +34,6 @@ class CopyStoreConfigurationRequest extends FormRequest
                 $validator->errors()->add(
                     'target_store_id',
                     'Target store must be different from the source store.'
-                );
-                return;
-            }
-
-            $targetStore = Store::find($targetStoreId);
-            if ($targetStore === null) {
-                return;
-            }
-
-            if (! app(StoreAccessService::class)->canAccessStore($this->user(), $targetStore)) {
-                $validator->errors()->add(
-                    'target_store_id',
-                    'You do not have access to the target store.'
                 );
             }
         });

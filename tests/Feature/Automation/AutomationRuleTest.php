@@ -165,7 +165,7 @@ class AutomationRuleTest extends TestCase
             ->assertCreated();
     }
 
-    public function test_non_manager_cannot_create_automation_rule(): void
+    public function test_non_manager_can_create_automation_rule(): void
     {
         [, $store] = $this->makeStore();
         $viewer = User::factory()->create();
@@ -177,7 +177,7 @@ class AutomationRuleTest extends TestCase
                 'trigger' => 'application_created',
                 'actions' => [['type' => 'create_activity', 'event_type' => 'x']],
             ])
-            ->assertForbidden();
+            ->assertCreated();
     }
 
     public function test_create_rejects_invalid_trigger(): void
@@ -293,7 +293,7 @@ class AutomationRuleTest extends TestCase
             ->assertJsonPath('data.is_active', false);
     }
 
-    public function test_update_forbidden_for_non_manager(): void
+    public function test_update_allowed_for_non_manager(): void
     {
         [, $store] = $this->makeStore();
         $rule    = $this->makeRule($store);
@@ -302,7 +302,7 @@ class AutomationRuleTest extends TestCase
 
         $this->actingAs($viewer)
             ->patchJson("/api/v1/automation-rules/{$rule->id}", ['name' => 'Hack'])
-            ->assertForbidden();
+            ->assertOk();
     }
 
     public function test_cannot_update_rule_from_other_store(): void
@@ -332,7 +332,7 @@ class AutomationRuleTest extends TestCase
         $this->assertDatabaseMissing('automation_rules', ['id' => $rule->id]);
     }
 
-    public function test_delete_forbidden_for_non_manager(): void
+    public function test_delete_allowed_for_non_manager(): void
     {
         [, $store] = $this->makeStore();
         $rule    = $this->makeRule($store);
@@ -341,7 +341,7 @@ class AutomationRuleTest extends TestCase
 
         $this->actingAs($viewer)
             ->deleteJson("/api/v1/automation-rules/{$rule->id}")
-            ->assertForbidden();
+            ->assertOk();
     }
 
     // -----------------------------------------------------------------------

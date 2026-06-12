@@ -49,7 +49,7 @@ class QuestionnaireTemplateController extends Controller
     public function store(CreateQuestionnaireTemplateRequest $request, Store $store): JsonResponse
     {
         if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can manage questionnaires.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $questionnaire = $this->questionnaireService->create($store, $request->validated(), $request->user());
@@ -75,7 +75,7 @@ class QuestionnaireTemplateController extends Controller
         }
 
         if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can manage questionnaires.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $questionnaire = $this->questionnaireService->update($questionnaire, $request->validated());
@@ -90,7 +90,7 @@ class QuestionnaireTemplateController extends Controller
         }
 
         if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can manage questionnaires.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $this->questionnaireService->delete($questionnaire);
@@ -105,10 +105,6 @@ class QuestionnaireTemplateController extends Controller
 
     private function canManage(Request $request, Store $store): bool
     {
-        return in_array(
-            $this->storeAccessService->getUserRoleAtStore($request->user(), $store),
-            ['franchise_admin', 'store_manager'],
-            true
-        );
+        return $this->storeAccessService->canAccessStore($request->user(), $store);
     }
 }

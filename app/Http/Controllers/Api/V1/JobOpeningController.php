@@ -57,7 +57,7 @@ class JobOpeningController extends Controller
     public function store(CreateJobOpeningRequest $request, Store $store): JsonResponse
     {
         if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can create job openings.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $jobOpening = $this->jobOpeningService->create($store, $request->validated(), $request->user());
@@ -81,7 +81,7 @@ class JobOpeningController extends Controller
         }
 
         if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can update job openings.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $jobOpening = $this->jobOpeningService->update($jobOpening, $request->validated());
@@ -95,8 +95,8 @@ class JobOpeningController extends Controller
             return ApiResponse::notFound('Job opening not found');
         }
 
-        if ($this->storeAccessService->getUserRoleAtStore($request->user(), $store) !== 'franchise_admin') {
-            return ApiResponse::forbidden('Only franchise admins can delete job openings.');
+        if (! $this->storeAccessService->canAccessStore($request->user(), $store)) {
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $this->jobOpeningService->delete($jobOpening);
@@ -111,7 +111,7 @@ class JobOpeningController extends Controller
         }
 
         if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can publish job openings.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $jobOpening = $this->jobOpeningService->publish($jobOpening);
@@ -126,7 +126,7 @@ class JobOpeningController extends Controller
         }
 
         if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('Only franchise admins and store managers can close job openings.');
+            return ApiResponse::forbidden('You do not have access to this store.');
         }
 
         $jobOpening = $this->jobOpeningService->close($jobOpening);
@@ -141,10 +141,6 @@ class JobOpeningController extends Controller
 
     private function canManage(Request $request, Store $store): bool
     {
-        return in_array(
-            $this->storeAccessService->getUserRoleAtStore($request->user(), $store),
-            ['franchise_admin', 'store_manager'],
-            true
-        );
+        return $this->storeAccessService->canAccessStore($request->user(), $store);
     }
 }
