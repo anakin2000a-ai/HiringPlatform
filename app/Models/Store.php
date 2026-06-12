@@ -15,6 +15,7 @@ class Store extends Model
     use HasFactory;
 
     protected $fillable = [
+        'id',
         'franchise_account_id',
         'store_name',
         'status',
