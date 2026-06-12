@@ -6,6 +6,7 @@ use Database\Factories\ApplicantDocumentFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+ use Illuminate\Support\Facades\Storage;
 
 class ApplicantDocument extends Model
 {
@@ -28,7 +29,16 @@ class ApplicantDocument extends Model
         'rejected_reason',
         'expires_at',
     ];
+    protected $appends = ['url'];
 
+public function getUrlAttribute(): ?string
+{
+    if (! $this->file_path) {
+        return null;
+    }
+
+    return Storage::disk('public')->url($this->file_path);
+}
     protected function casts(): array
     {
         return [

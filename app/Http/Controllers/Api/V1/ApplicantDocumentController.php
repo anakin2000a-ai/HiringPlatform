@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Documents\InitiateApplicantDocumentRequest;
 use App\Http\Requests\Documents\RejectApplicantDocumentRequest;
 use App\Http\Requests\Documents\SignApplicantDocumentRequest;
+use App\Http\Requests\Documents\SubmitApplicantDocumentRequest;
 use App\Http\Resources\ApplicantDocumentResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\Application;
@@ -84,7 +85,7 @@ class ApplicantDocumentController extends Controller
         );
     }
 
-    public function submit(Request $request, ApplicantDocument $document): JsonResponse
+   public function submit(SubmitApplicantDocumentRequest $request, ApplicantDocument $document): JsonResponse
     {
         $document->load(['application.jobOpening', 'documentTemplate']);
         $store = $document->application->jobOpening->store;
@@ -93,11 +94,14 @@ class ApplicantDocumentController extends Controller
             return ApiResponse::forbidden();
         }
 
-        $document = $this->documentService->submit($document, $request->user());
+        $document = $this->documentService->submit(
+            $document,
+            $request->user(),
+            $request->file('file')
+        );
 
         return ApiResponse::success(new ApplicantDocumentResource($document), 'Document submitted');
     }
-
     public function sign(SignApplicantDocumentRequest $request, ApplicantDocument $document): JsonResponse
     {
         $document->load(['application.jobOpening', 'documentTemplate']);

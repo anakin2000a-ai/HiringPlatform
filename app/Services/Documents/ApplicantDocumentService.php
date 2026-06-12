@@ -9,6 +9,7 @@ use App\Models\StageDocumentRequirement;
 use App\Models\User;
 use App\Services\Applications\WorkflowActivityService;
 use App\Services\Automation\AutomationRuleEngine;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -31,52 +32,60 @@ class ApplicantDocumentService
         ]);
     }
 
-    public function submit(ApplicantDocument $document, User $actor): ApplicantDocument
-    {
-        if (! in_array($document->status, ['pending', 'rejected'], true)) {
-            throw ValidationException::withMessages([
-                'status' => ['Only pending or rejected documents can be submitted.'],
-            ]);
-        }
-
-        $result = DB::transaction(function () use ($document, $actor): ApplicantDocument {
-            $document->update([
-                'status'       => 'submitted',
-                'submitted_at' => now(),
-            ]);
-
-            $storeId = $document->application->jobOpening->store_id;
-
-            $this->activityService->record(
-                applicationId:  $document->application_id,
-                storeId:        $storeId,
-                eventType:      'applicant_document_submitted',
-                workflowStageId: $document->workflow_stage_id,
-                actorType:      'user',
-                actorId:        $actor->id,
-                newValue:       ['document_id' => $document->id, 'status' => 'submitted'],
-            );
-
-            OutboxEvent::create([
-                'event_id'   => Str::uuid()->toString(),
-                'event_type' => 'hiring.document.submitted',
-                'subject'    => 'hiring.document.submitted',
-                'payload'    => [
-                    'document_id'    => $document->id,
-                    'application_id' => $document->application_id,
-                    'submitted_by'   => $actor->id,
-                ],
-                'status'   => 'pending',
-                'attempts' => 0,
-            ]);
-
-            return $document->fresh(['documentTemplate']);
-        });
-
-        $this->automationEngine->evaluate('document_submitted', $result->application);
-
-        return $result;
+   public function submit(ApplicantDocument $document, User $actor, UploadedFile $file): ApplicantDocument
+{
+    if (! in_array($document->status, ['pending', 'rejected'], true)) {
+        throw ValidationException::withMessages([
+            'status' => ['Only pending or rejected documents can be submitted.'],
+        ]);
     }
+
+    $result = DB::transaction(function () use ($document, $actor, $file): ApplicantDocument {
+        $path = $file->store("applicant-documents/{$document->application_id}", 'public');
+
+        $document->update([
+            'status'       => 'submitted',
+            'file_path'    => $path,
+            'submitted_at' => now(),
+        ]);
+
+        $storeId = $document->application->jobOpening->store_id;
+
+        $this->activityService->record(
+            applicationId:  $document->application_id,
+            storeId:        $storeId,
+            eventType:      'applicant_document_submitted',
+            workflowStageId: $document->workflow_stage_id,
+            actorType:      'user',
+            actorId:        $actor->id,
+            newValue: [
+                'document_id' => $document->id,
+                'status' => 'submitted',
+                'file_path' => $path,
+            ],
+        );
+
+        OutboxEvent::create([
+            'event_id'   => Str::uuid()->toString(),
+            'event_type' => 'hiring.document.submitted',
+            'subject'    => 'hiring.document.submitted',
+            'payload'    => [
+                'document_id'    => $document->id,
+                'application_id' => $document->application_id,
+                'submitted_by'   => $actor->id,
+                'file_path'      => $path,
+            ],
+            'status'   => 'pending',
+            'attempts' => 0,
+        ]);
+
+        return $document->fresh(['documentTemplate']);
+    });
+
+    $this->automationEngine->evaluate('document_submitted', $result->application);
+
+    return $result;
+}
 
     public function sign(ApplicantDocument $document, ?string $externalSignatureId, User $actor): ApplicantDocument
     {

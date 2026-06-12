@@ -27,7 +27,7 @@ class ApplicantDocumentResource extends JsonResource
             'expires_at'                   => $this->expires_at,
             'document_template'            => $this->whenLoaded('documentTemplate', fn () => new DocumentTemplateResource($this->documentTemplate)),
             'created_at'                   => $this->created_at,
-            'updated_at'                   => $this->updated_at,
+            'updated_at'                   => $this->updated_at,'url' => $this->url,
         ];
     }
 }
