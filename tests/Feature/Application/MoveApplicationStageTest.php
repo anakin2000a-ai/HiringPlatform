@@ -75,12 +75,12 @@ class MoveApplicationStageTest extends TestCase
 
     private function moveUrl(Store $store, Application $application): string
     {
-        return "/api/v1/stores/{$store->id}/applications/{$application->id}/move-stage";
+        return "/api/v1/stores/{$store->store_name}/applications/{$application->id}/move-stage";
     }
 
     private function activitiesUrl(Store $store, Application $application): string
     {
-        return "/api/v1/stores/{$store->id}/applications/{$application->id}/activities";
+        return "/api/v1/stores/{$store->store_name}/applications/{$application->id}/activities";
     }
 
     // -----------------------------------------------------------------------
@@ -373,7 +373,7 @@ class MoveApplicationStageTest extends TestCase
         $appB      = Application::factory()->atStage($stageB)->create(['job_opening_id' => $jobB->id]);
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/applications/{$appB->id}/move-stage", [
+            ->postJson("/api/v1/stores/{$store->store_name}/applications/{$appB->id}/move-stage", [
                 'to_stage_id' => $stageB->id,
             ])
             ->assertNotFound();
@@ -498,7 +498,7 @@ class MoveApplicationStageTest extends TestCase
         $appB      = Application::factory()->atStage($stageB)->create(['job_opening_id' => $jobB->id]);
 
         $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/applications/{$appB->id}/activities")
+            ->getJson("/api/v1/stores/{$store->store_name}/applications/{$appB->id}/activities")
             ->assertNotFound();
     }
 

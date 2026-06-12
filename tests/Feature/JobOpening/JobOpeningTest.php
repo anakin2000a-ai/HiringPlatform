@@ -50,7 +50,7 @@ class JobOpeningTest extends TestCase
         [, $store, $admin, $workflow] = $this->makeAdminContext();
 
         $response = $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/job-openings", [
+            ->postJson("/api/v1/stores/{$store->store_name}/job-openings", [
                 'hiring_workflow_id' => $workflow->id,
                 'title' => 'Cashier',
                 'openings_count' => 3,
@@ -73,7 +73,7 @@ class JobOpeningTest extends TestCase
         [, $store, $manager, $workflow] = $this->makeManagerContext();
 
         $this->actingAs($manager)
-            ->postJson("/api/v1/stores/{$store->id}/job-openings", [
+            ->postJson("/api/v1/stores/{$store->store_name}/job-openings", [
                 'hiring_workflow_id' => $workflow->id,
                 'title' => 'Barista',
             ])
@@ -89,7 +89,7 @@ class JobOpeningTest extends TestCase
         $workflow = HiringWorkflow::factory()->forStore($store)->create();
 
         $this->actingAs($recruiter)
-            ->postJson("/api/v1/stores/{$store->id}/job-openings", [
+            ->postJson("/api/v1/stores/{$store->store_name}/job-openings", [
                 'hiring_workflow_id' => $workflow->id,
                 'title' => 'Cashier',
             ])
@@ -105,7 +105,7 @@ class JobOpeningTest extends TestCase
         // No UserStoreAccess created
 
         $this->actingAs($manager)
-            ->postJson("/api/v1/stores/{$store->id}/job-openings", [
+            ->postJson("/api/v1/stores/{$store->store_name}/job-openings", [
                 'hiring_workflow_id' => $workflow->id,
                 'title' => 'Cashier',
             ])
@@ -123,7 +123,7 @@ class JobOpeningTest extends TestCase
         $workflowB = HiringWorkflow::factory()->forStore($storeB)->create();
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$storeA->id}/job-openings", [
+            ->postJson("/api/v1/stores/{$storeA->store_name}/job-openings", [
                 'hiring_workflow_id' => $workflowB->id,
                 'title' => 'Cashier',
             ])
@@ -140,7 +140,7 @@ class JobOpeningTest extends TestCase
         [, $store, $admin, $workflow] = $this->makeAdminContext();
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/job-openings", [
+            ->postJson("/api/v1/stores/{$store->store_name}/job-openings", [
                 'hiring_workflow_id' => $workflow->id,
             ])
             ->assertUnprocessable()
@@ -152,7 +152,7 @@ class JobOpeningTest extends TestCase
         [, $store, $admin, $workflow] = $this->makeAdminContext();
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/job-openings", [
+            ->postJson("/api/v1/stores/{$store->store_name}/job-openings", [
                 'hiring_workflow_id' => $workflow->id,
                 'title' => 'Cashier',
                 'openings_count' => 0,
@@ -171,7 +171,7 @@ class JobOpeningTest extends TestCase
         JobOpening::factory()->withWorkflow($workflow)->count(3)->create();
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/job-openings")
+            ->getJson("/api/v1/stores/{$store->store_name}/job-openings")
             ->assertOk();
 
         $this->assertCount(3, $response->json('data.data'));
@@ -191,7 +191,7 @@ class JobOpeningTest extends TestCase
         JobOpening::factory()->withWorkflow($workflowB)->count(4)->create();
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$storeA->id}/job-openings")
+            ->getJson("/api/v1/stores/{$storeA->store_name}/job-openings")
             ->assertOk();
 
         $this->assertCount(2, $response->json('data.data'));
@@ -204,7 +204,7 @@ class JobOpeningTest extends TestCase
         JobOpening::factory()->withWorkflow($workflow)->published()->create();
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/job-openings?status=draft")
+            ->getJson("/api/v1/stores/{$store->store_name}/job-openings?status=draft")
             ->assertOk();
 
         $this->assertCount(1, $response->json('data.data'));
@@ -221,7 +221,7 @@ class JobOpeningTest extends TestCase
         $job = JobOpening::factory()->withWorkflow($workflow)->create(['title' => 'Barista']);
 
         $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}")
+            ->getJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}")
             ->assertOk()
             ->assertJsonPath('data.id', $job->id)
             ->assertJsonPath('data.title', 'Barista');
@@ -239,7 +239,7 @@ class JobOpeningTest extends TestCase
         $jobInB = JobOpening::factory()->withWorkflow($workflowB)->create();
 
         $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$storeA->id}/job-openings/{$jobInB->id}")
+            ->getJson("/api/v1/stores/{$storeA->store_name}/job-openings/{$jobInB->id}")
             ->assertNotFound();
     }
 
@@ -253,7 +253,7 @@ class JobOpeningTest extends TestCase
         $job = JobOpening::factory()->withWorkflow($workflow)->create(['title' => 'Old Title']);
 
         $this->actingAs($admin)
-            ->patchJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}", [
+            ->patchJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}", [
                 'title' => 'New Title',
             ])
             ->assertOk()
@@ -270,7 +270,7 @@ class JobOpeningTest extends TestCase
         // status is not in UpdateJobOpeningRequest rules — it should be silently ignored
         // The status should remain draft after the request
         $this->actingAs($admin)
-            ->patchJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}", [
+            ->patchJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}", [
                 'title' => 'Updated',
                 'status' => 'published',
             ])
@@ -289,7 +289,7 @@ class JobOpeningTest extends TestCase
         $job = JobOpening::factory()->withWorkflow($workflow)->create();
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}/publish")
+            ->postJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}/publish")
             ->assertOk()
             ->assertJsonPath('data.status', 'published');
 
@@ -303,7 +303,7 @@ class JobOpeningTest extends TestCase
         $job = JobOpening::factory()->withWorkflow($workflow)->published()->create();
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}/publish")
+            ->postJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}/publish")
             ->assertUnprocessable()
             ->assertJsonPath('errors.status.0', 'Only draft job openings can be published.');
     }
@@ -318,7 +318,7 @@ class JobOpeningTest extends TestCase
         $job = JobOpening::factory()->withWorkflow($workflow)->published()->create();
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}/close")
+            ->postJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}/close")
             ->assertOk()
             ->assertJsonPath('data.status', 'closed');
 
@@ -332,7 +332,7 @@ class JobOpeningTest extends TestCase
         $job = JobOpening::factory()->withWorkflow($workflow)->create();
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}/close")
+            ->postJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}/close")
             ->assertOk()
             ->assertJsonPath('data.status', 'closed');
     }
@@ -343,7 +343,7 @@ class JobOpeningTest extends TestCase
         $job = JobOpening::factory()->withWorkflow($workflow)->closed()->create();
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}/close")
+            ->postJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}/close")
             ->assertUnprocessable()
             ->assertJsonPath('errors.status.0', 'This job opening is already closed.');
     }
@@ -358,7 +358,7 @@ class JobOpeningTest extends TestCase
         $job = JobOpening::factory()->withWorkflow($workflow)->create();
 
         $this->actingAs($admin)
-            ->deleteJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}")
+            ->deleteJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}")
             ->assertOk();
 
         $this->assertDatabaseMissing('job_openings', ['id' => $job->id]);
@@ -370,7 +370,7 @@ class JobOpeningTest extends TestCase
         $job = JobOpening::factory()->withWorkflow($workflow)->create();
 
         $this->actingAs($manager)
-            ->deleteJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}")
+            ->deleteJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}")
             ->assertForbidden();
     }
 
@@ -388,19 +388,19 @@ class JobOpeningTest extends TestCase
         // No UserStoreAccess
 
         $this->actingAs($manager)
-            ->getJson("/api/v1/stores/{$store->id}/job-openings")
+            ->getJson("/api/v1/stores/{$store->store_name}/job-openings")
             ->assertForbidden();
 
         $this->actingAs($manager)
-            ->getJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}")
+            ->getJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}")
             ->assertForbidden();
 
         $this->actingAs($manager)
-            ->postJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}/publish")
+            ->postJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}/publish")
             ->assertForbidden();
 
         $this->actingAs($manager)
-            ->postJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}/close")
+            ->postJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}/close")
             ->assertForbidden();
     }
 
@@ -408,7 +408,7 @@ class JobOpeningTest extends TestCase
     {
         $store = Store::factory()->create();
 
-        $this->getJson("/api/v1/stores/{$store->id}/job-openings")
+        $this->getJson("/api/v1/stores/{$store->store_name}/job-openings")
             ->assertUnauthorized();
     }
 

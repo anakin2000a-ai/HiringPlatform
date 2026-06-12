@@ -121,7 +121,7 @@ class ConfigurationCopyTest extends TestCase
     private function postCopy(User $actor, Store $source, array $payload): \Illuminate\Testing\TestResponse
     {
         return $this->actingAs($actor)
-            ->postJson("/api/v1/stores/{$source->id}/copy-configuration", $payload);
+            ->postJson("/api/v1/stores/{$source->store_name}/copy-configuration", $payload);
     }
 
     // -------------------------------------------------------------------------
@@ -134,7 +134,7 @@ class ConfigurationCopyTest extends TestCase
         $source    = $this->makeStore($franchise);
         $target    = $this->makeStore($franchise);
 
-        $this->postJson("/api/v1/stores/{$source->id}/copy-configuration", [
+        $this->postJson("/api/v1/stores/{$source->store_name}/copy-configuration", [
             'target_store_id' => $target->id,
         ])->assertUnauthorized();
     }

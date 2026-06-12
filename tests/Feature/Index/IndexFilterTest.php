@@ -96,7 +96,7 @@ class IndexFilterTest extends TestCase
         HiringWorkflow::factory()->count(5)->forStore($store)->create();
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/workflows?per_page=2");
+            ->getJson("/api/v1/stores/{$store->store_name}/workflows?per_page=2");
 
         $response->assertOk();
         $this->assertEquals(2, $response->json('data.meta.per_page'));
@@ -108,7 +108,7 @@ class IndexFilterTest extends TestCase
         [$franchise, $store, $admin] = $this->makeAdminStore();
 
         $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/workflows?per_page=101")
+            ->getJson("/api/v1/stores/{$store->store_name}/workflows?per_page=101")
             ->assertUnprocessable();
     }
 
@@ -117,7 +117,7 @@ class IndexFilterTest extends TestCase
         [$franchise, $store, $admin] = $this->makeAdminStore();
 
         $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/workflows?per_page=abc")
+            ->getJson("/api/v1/stores/{$store->store_name}/workflows?per_page=abc")
             ->assertUnprocessable();
     }
 
@@ -128,7 +128,7 @@ class IndexFilterTest extends TestCase
         JobOpening::factory()->count(3)->create(['store_id' => $store->id, 'hiring_workflow_id' => $workflow->id]);
 
         $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/job-openings?per_page=100")
+            ->getJson("/api/v1/stores/{$store->store_name}/job-openings?per_page=100")
             ->assertOk();
     }
 
@@ -141,7 +141,7 @@ class IndexFilterTest extends TestCase
         [$franchise, $store, $admin] = $this->makeAdminStore();
 
         $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/job-openings?status=invalid_status")
+            ->getJson("/api/v1/stores/{$store->store_name}/job-openings?status=invalid_status")
             ->assertUnprocessable()
             ->assertJsonValidationErrorFor('status');
     }
@@ -154,7 +154,7 @@ class IndexFilterTest extends TestCase
         JobOpening::factory()->create(['store_id' => $store->id, 'hiring_workflow_id' => $workflow->id, 'status' => 'published']);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/job-openings?status=draft");
+            ->getJson("/api/v1/stores/{$store->store_name}/job-openings?status=draft");
 
         $response->assertOk();
         $this->assertCount(1, $response->json('data.data'));
@@ -166,7 +166,7 @@ class IndexFilterTest extends TestCase
         [$franchise, $store, $admin] = $this->makeAdminStore();
 
         $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/applications?status=not_a_status")
+            ->getJson("/api/v1/stores/{$store->store_name}/applications?status=not_a_status")
             ->assertUnprocessable()
             ->assertJsonValidationErrorFor('status');
     }
@@ -181,7 +181,7 @@ class IndexFilterTest extends TestCase
         Application::factory()->create(['job_opening_id' => $job->id, 'status' => 'hired']);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/applications?status=hired");
+            ->getJson("/api/v1/stores/{$store->store_name}/applications?status=hired");
 
         $response->assertOk();
         $this->assertCount(1, $response->json('data.data'));
@@ -218,7 +218,7 @@ class IndexFilterTest extends TestCase
 
         // admin tries to filter store's applications using a job opening from another store
         $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/applications?job_opening_id={$otherJob->id}")
+            ->getJson("/api/v1/stores/{$store->store_name}/applications?job_opening_id={$otherJob->id}")
             ->assertUnprocessable()
             ->assertJsonValidationErrorFor('job_opening_id');
     }
@@ -232,7 +232,7 @@ class IndexFilterTest extends TestCase
         Application::factory()->create(['job_opening_id' => $job->id]);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/applications?job_opening_id={$job->id}");
+            ->getJson("/api/v1/stores/{$store->store_name}/applications?job_opening_id={$job->id}");
 
         $response->assertOk();
         $this->assertCount(1, $response->json('data.data'));
@@ -251,7 +251,7 @@ class IndexFilterTest extends TestCase
         $otherStage  = WorkflowStage::factory()->forWorkflow($workflow2)->create();
 
         $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/applications?current_stage_id={$otherStage->id}")
+            ->getJson("/api/v1/stores/{$store->store_name}/applications?current_stage_id={$otherStage->id}")
             ->assertUnprocessable()
             ->assertJsonValidationErrorFor('current_stage_id');
     }
@@ -265,7 +265,7 @@ class IndexFilterTest extends TestCase
         $this->makeApplication($job, $stage);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/applications?current_stage_id={$stage->id}");
+            ->getJson("/api/v1/stores/{$store->store_name}/applications?current_stage_id={$stage->id}");
 
         $response->assertOk();
         $this->assertCount(1, $response->json('data.data'));
@@ -286,7 +286,7 @@ class IndexFilterTest extends TestCase
         WorkflowStage::factory()->forWorkflow($workflow)->create(['position' => 2, 'name' => 'Second']);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/workflows/{$workflow->id}/stages");
+            ->getJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}/stages");
 
         $response->assertOk();
         $positions = array_column($response->json('data.data'), 'position');
@@ -308,7 +308,7 @@ class IndexFilterTest extends TestCase
         QuestionnaireQuestion::factory()->create(['questionnaire_template_id' => $questionnaire->id, 'position' => 2, 'question_key' => 'q2', 'label' => 'Q2']);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/questionnaires/{$questionnaire->id}/questions");
+            ->getJson("/api/v1/stores/{$store->store_name}/questionnaires/{$questionnaire->id}/questions");
 
         $response->assertOk();
         $positions = array_column($response->json('data.data'), 'position');
@@ -394,7 +394,7 @@ class IndexFilterTest extends TestCase
         ]);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/automation-rules?trigger=stage_entered");
+            ->getJson("/api/v1/stores/{$store->store_name}/automation-rules?trigger=stage_entered");
 
         $response->assertOk();
         $this->assertCount(1, $response->json('data.data'));
@@ -418,7 +418,7 @@ class IndexFilterTest extends TestCase
         ]);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/automation-rules?is_active=0");
+            ->getJson("/api/v1/stores/{$store->store_name}/automation-rules?is_active=0");
 
         $response->assertOk();
         $this->assertCount(1, $response->json('data.data'));
@@ -458,7 +458,7 @@ class IndexFilterTest extends TestCase
         JobOpening::factory()->create(['store_id' => $store->id, 'hiring_workflow_id' => $workflow->id, 'title' => 'Barista']);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/job-openings?search=Cash");
+            ->getJson("/api/v1/stores/{$store->store_name}/job-openings?search=Cash");
 
         $response->assertOk();
         $this->assertCount(1, $response->json('data.data'));
@@ -482,7 +482,7 @@ class IndexFilterTest extends TestCase
         Application::factory()->create(['job_opening_id' => $job->id, 'applicant_id' => $applicantJane->id]);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/applications?search=John");
+            ->getJson("/api/v1/stores/{$store->store_name}/applications?search=John");
 
         $response->assertOk();
         $this->assertCount(1, $response->json('data.data'));
@@ -501,7 +501,7 @@ class IndexFilterTest extends TestCase
         WorkflowStage::factory()->forWorkflow($workflow)->create(['stage_type' => 'review', 'position' => 2]);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/workflows/{$workflow->id}/stages?stage_type=review");
+            ->getJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}/stages?stage_type=review");
 
         $response->assertOk();
         $this->assertCount(1, $response->json('data.data'));
@@ -517,7 +517,7 @@ class IndexFilterTest extends TestCase
         WorkflowStage::factory()->forWorkflow($workflow)->create(['is_initial' => false, 'position' => 2]);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/workflows/{$workflow->id}/stages?is_initial=1");
+            ->getJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}/stages?is_initial=1");
 
         $response->assertOk();
         $this->assertCount(1, $response->json('data.data'));
@@ -541,7 +541,7 @@ class IndexFilterTest extends TestCase
         WorkflowStageTransition::factory()->create(['hiring_workflow_id' => $workflow->id, 'from_stage_id' => $stageA->id, 'to_stage_id' => $stageC->id]);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/workflows/{$workflow->id}/transitions?to_stage_id={$stageB->id}");
+            ->getJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}/transitions?to_stage_id={$stageB->id}");
 
         $response->assertOk();
         $this->assertCount(1, $response->json('data.data'));
@@ -560,7 +560,7 @@ class IndexFilterTest extends TestCase
         DocumentTemplate::factory()->create(['store_id' => $store->id, 'document_type' => 'nda']);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/document-templates?document_type=nda");
+            ->getJson("/api/v1/stores/{$store->store_name}/document-templates?document_type=nda");
 
         $response->assertOk();
         $this->assertCount(1, $response->json('data.data'));
@@ -575,7 +575,7 @@ class IndexFilterTest extends TestCase
         DocumentTemplate::factory()->create(['store_id' => $store->id, 'requires_signature' => false]);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/document-templates?requires_signature=1");
+            ->getJson("/api/v1/stores/{$store->store_name}/document-templates?requires_signature=1");
 
         $response->assertOk();
         $this->assertCount(1, $response->json('data.data'));
@@ -594,7 +594,7 @@ class IndexFilterTest extends TestCase
         QuestionnaireTemplate::factory()->create(['store_id' => $store->id, 'status' => 'inactive']);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/questionnaires?status=active");
+            ->getJson("/api/v1/stores/{$store->store_name}/questionnaires?status=active");
 
         $response->assertOk();
         $this->assertCount(1, $response->json('data.data'));
@@ -610,7 +610,7 @@ class IndexFilterTest extends TestCase
         QuestionnaireQuestion::factory()->create(['questionnaire_template_id' => $questionnaire->id, 'type' => 'boolean', 'position' => 2, 'question_key' => 'q2', 'label' => 'Q2']);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/questionnaires/{$questionnaire->id}/questions?type=boolean");
+            ->getJson("/api/v1/stores/{$store->store_name}/questionnaires/{$questionnaire->id}/questions?type=boolean");
 
         $response->assertOk();
         $this->assertCount(1, $response->json('data.data'));
@@ -630,7 +630,7 @@ class IndexFilterTest extends TestCase
 
         // admin2 tries to access store (not store2)
         $this->actingAs($admin2)
-            ->getJson("/api/v1/stores/{$store->id}/workflows")
+            ->getJson("/api/v1/stores/{$store->store_name}/workflows")
             ->assertForbidden();
     }
 
@@ -665,7 +665,7 @@ class IndexFilterTest extends TestCase
         }
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/workflows/{$workflow->id}/stages?per_page=2");
+            ->getJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}/stages?per_page=2");
 
         $response->assertOk();
         $this->assertCount(2, $response->json('data.data'));
@@ -686,7 +686,7 @@ class IndexFilterTest extends TestCase
         WorkflowStageTransition::factory()->create(['hiring_workflow_id' => $workflow->id, 'from_stage_id' => $stageA->id, 'to_stage_id' => $stageC->id]);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/workflows/{$workflow->id}/transitions?per_page=2");
+            ->getJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}/transitions?per_page=2");
 
         $response->assertOk();
         $this->assertCount(2, $response->json('data.data'));
@@ -708,7 +708,7 @@ class IndexFilterTest extends TestCase
         }
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/questionnaires/{$questionnaire->id}/questions?per_page=2");
+            ->getJson("/api/v1/stores/{$store->store_name}/questionnaires/{$questionnaire->id}/questions?per_page=2");
 
         $response->assertOk();
         $this->assertCount(2, $response->json('data.data'));

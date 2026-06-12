@@ -92,17 +92,17 @@ class StoreManagementTest extends TestCase
     // Show
     // -----------------------------------------------------------------------
 
-    public function test_show_returns_store_by_id(): void
+    public function test_show_returns_store_by_store_name(): void
     {
         $franchise = FranchiseAccount::factory()->create();
-        $store = Store::factory()->for($franchise)->create(['store_name' => 'West Branch']);
+        $store = Store::factory()->for($franchise)->create(['store_name' => 'west-branch']);
         $admin = $this->makeFranchiseAdmin($franchise, $store);
 
         $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}")
+            ->getJson("/api/v1/stores/{$store->store_name}")
             ->assertOk()
             ->assertJsonPath('data.id', $store->id)
-            ->assertJsonPath('data.store_name', 'West Branch');
+            ->assertJsonPath('data.store_name', 'west-branch');
     }
 
     // -----------------------------------------------------------------------
@@ -112,15 +112,15 @@ class StoreManagementTest extends TestCase
     public function test_franchise_admin_can_update_store_name(): void
     {
         $franchise = FranchiseAccount::factory()->create();
-        $store = Store::factory()->for($franchise)->create(['store_name' => 'Old Name']);
+        $store = Store::factory()->for($franchise)->create(['store_name' => 'old-name']);
         $admin = $this->makeFranchiseAdmin($franchise, $store);
 
         $this->actingAs($admin)
-            ->patchJson("/api/v1/stores/{$store->id}", ['store_name' => 'New Name'])
+            ->patchJson("/api/v1/stores/{$store->store_name}", ['store_name' => 'new-name'])
             ->assertOk()
-            ->assertJsonPath('data.store_name', 'New Name');
+            ->assertJsonPath('data.store_name', 'new-name');
 
-        $this->assertDatabaseHas('stores', ['id' => $store->id, 'store_name' => 'New Name']);
+        $this->assertDatabaseHas('stores', ['id' => $store->id, 'store_name' => 'new-name']);
     }
 
     public function test_store_manager_assigned_to_store_cannot_update_it(): void
@@ -130,7 +130,7 @@ class StoreManagementTest extends TestCase
         $manager = $this->makeStoreManager($store);
 
         $this->actingAs($manager)
-            ->patchJson("/api/v1/stores/{$store->id}", ['store_name' => 'Hacked Name'])
+            ->patchJson("/api/v1/stores/{$store->store_name}", ['store_name' => 'Hacked Name'])
             ->assertForbidden();
     }
 
@@ -143,7 +143,7 @@ class StoreManagementTest extends TestCase
         $adminA = $this->makeFranchiseAdmin($franchiseA, $storeA);
 
         $this->actingAs($adminA)
-            ->patchJson("/api/v1/stores/{$storeB->id}", ['store_name' => 'Hacked'])
+            ->patchJson("/api/v1/stores/{$storeB->store_name}", ['store_name' => 'Hacked'])
             ->assertForbidden();
     }
 
@@ -158,7 +158,7 @@ class StoreManagementTest extends TestCase
         $admin = $this->makeFranchiseAdmin($franchise, $store);
 
         $this->actingAs($admin)
-            ->deleteJson("/api/v1/stores/{$store->id}")
+            ->deleteJson("/api/v1/stores/{$store->store_name}")
             ->assertOk();
 
         $this->assertDatabaseMissing('stores', ['id' => $store->id]);
@@ -171,7 +171,7 @@ class StoreManagementTest extends TestCase
         $manager = $this->makeStoreManager($store);
 
         $this->actingAs($manager)
-            ->deleteJson("/api/v1/stores/{$store->id}")
+            ->deleteJson("/api/v1/stores/{$store->store_name}")
             ->assertForbidden();
     }
 
@@ -184,7 +184,7 @@ class StoreManagementTest extends TestCase
         $adminA = $this->makeFranchiseAdmin($franchiseA, $storeA);
 
         $this->actingAs($adminA)
-            ->deleteJson("/api/v1/stores/{$storeB->id}")
+            ->deleteJson("/api/v1/stores/{$storeB->store_name}")
             ->assertForbidden();
     }
 }

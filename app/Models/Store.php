@@ -20,6 +20,15 @@ class Store extends Model
         'status',
     ];
 
+    /**
+     * Route model binding resolves Store by store_name instead of id.
+     * All {store} parameters in routes accept a store_name value.
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'store_name';
+    }
+
     public function franchiseAccount(): BelongsTo
     {
         return $this->belongsTo(FranchiseAccount::class);

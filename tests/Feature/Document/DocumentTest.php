@@ -69,7 +69,7 @@ class DocumentTest extends TestCase
         $this->makeTemplate($store);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/document-templates")
+            ->getJson("/api/v1/stores/{$store->store_name}/document-templates")
             ->assertOk();
 
         $this->assertCount(2, $response->json('data.data'));
@@ -84,7 +84,7 @@ class DocumentTest extends TestCase
         $this->makeTemplate($storeB);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$storeA->id}/document-templates")
+            ->getJson("/api/v1/stores/{$storeA->store_name}/document-templates")
             ->assertOk();
 
         $this->assertCount(1, $response->json('data.data'));
@@ -95,7 +95,7 @@ class DocumentTest extends TestCase
         [, $store, $admin] = $this->makeStore();
 
         $response = $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/document-templates", [
+            ->postJson("/api/v1/stores/{$store->store_name}/document-templates", [
                 'name'               => 'Offer Letter',
                 'document_type'      => 'offer_letter',
                 'requires_signature' => true,
@@ -120,7 +120,7 @@ class DocumentTest extends TestCase
         [, $store, $admin] = $this->makeStore();
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/document-templates", [])
+            ->postJson("/api/v1/stores/{$store->store_name}/document-templates", [])
             ->assertUnprocessable()
             ->assertJsonStructure(['errors' => ['name', 'document_type']]);
     }
@@ -131,7 +131,7 @@ class DocumentTest extends TestCase
         $template = $this->makeTemplate($store);
 
         $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/document-templates/{$template->id}")
+            ->getJson("/api/v1/stores/{$store->store_name}/document-templates/{$template->id}")
             ->assertOk()
             ->assertJsonPath('data.id', $template->id);
     }
@@ -143,7 +143,7 @@ class DocumentTest extends TestCase
         $template = $this->makeTemplate($storeB);
 
         $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$storeA->id}/document-templates/{$template->id}")
+            ->getJson("/api/v1/stores/{$storeA->store_name}/document-templates/{$template->id}")
             ->assertNotFound();
     }
 
@@ -153,7 +153,7 @@ class DocumentTest extends TestCase
         $template = $this->makeTemplate($store);
 
         $this->actingAs($admin)
-            ->patchJson("/api/v1/stores/{$store->id}/document-templates/{$template->id}", [
+            ->patchJson("/api/v1/stores/{$store->store_name}/document-templates/{$template->id}", [
                 'name' => 'Updated Name',
             ])
             ->assertOk()
@@ -166,7 +166,7 @@ class DocumentTest extends TestCase
         $template = $this->makeTemplate($store);
 
         $this->actingAs($admin)
-            ->deleteJson("/api/v1/stores/{$store->id}/document-templates/{$template->id}")
+            ->deleteJson("/api/v1/stores/{$store->store_name}/document-templates/{$template->id}")
             ->assertOk();
 
         $this->assertDatabaseMissing('document_templates', ['id' => $template->id]);
@@ -183,7 +183,7 @@ class DocumentTest extends TestCase
         // No UserStoreAccess
 
         $this->actingAs($manager)
-            ->getJson("/api/v1/stores/{$store->id}/document-templates")
+            ->getJson("/api/v1/stores/{$store->store_name}/document-templates")
             ->assertForbidden();
     }
 
@@ -194,7 +194,7 @@ class DocumentTest extends TestCase
         UserStoreAccess::create(['user_id' => $recruiter->id, 'store_id' => $store->id, 'role' => 'recruiter', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->actingAs($recruiter)
-            ->postJson("/api/v1/stores/{$store->id}/document-templates", [
+            ->postJson("/api/v1/stores/{$store->store_name}/document-templates", [
                 'name'          => 'Doc',
                 'document_type' => 'contract',
             ])
@@ -205,7 +205,7 @@ class DocumentTest extends TestCase
     {
         [, $store] = $this->makeStore();
 
-        $this->getJson("/api/v1/stores/{$store->id}/document-templates")
+        $this->getJson("/api/v1/stores/{$store->store_name}/document-templates")
             ->assertUnauthorized();
     }
 

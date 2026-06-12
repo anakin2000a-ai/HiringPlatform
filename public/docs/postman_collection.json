@@ -7,7 +7,7 @@
   "variable": [
     { "key": "base_url", "value": "http://localhost:8000", "type": "string" },
     { "key": "token", "value": "", "type": "string", "description": "Bearer token from POST /auth/login" },
-    { "key": "store_id", "value": "1", "type": "string" },
+    { "key": "store_id", "value": "main-street", "type": "string", "description": "store_name of the target store" },
     { "key": "workflow_id", "value": "1", "type": "string" },
     { "key": "stage_id", "value": "1", "type": "string" },
     { "key": "transition_id", "value": "1", "type": "string" },

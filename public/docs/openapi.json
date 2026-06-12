@@ -14,7 +14,7 @@
       "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
     },
     "parameters": {
-      "storeId": { "name": "store", "in": "path", "required": true, "schema": { "type": "integer" } },
+      "storeId": { "name": "store", "in": "path", "required": true, "description": "The store_name of the store (e.g. \"main-street\")", "schema": { "type": "string" } },
       "workflowId": { "name": "workflow", "in": "path", "required": true, "schema": { "type": "integer" } },
       "stageId": { "name": "stage", "in": "path", "required": true, "schema": { "type": "integer" } },
       "transitionId": { "name": "transition", "in": "path", "required": true, "schema": { "type": "integer" } },

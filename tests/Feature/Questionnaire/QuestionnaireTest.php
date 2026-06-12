@@ -64,7 +64,7 @@ class QuestionnaireTest extends TestCase
         [, $store, $admin] = $this->makeStore();
 
         $response = $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/questionnaires", [
+            ->postJson("/api/v1/stores/{$store->store_name}/questionnaires", [
                 'name' => 'Basic Screening',
             ]);
 
@@ -85,7 +85,7 @@ class QuestionnaireTest extends TestCase
         [, $store, $admin] = $this->makeStore();
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/questionnaires", ['name' => 'Test Q'])
+            ->postJson("/api/v1/stores/{$store->store_name}/questionnaires", ['name' => 'Test Q'])
             ->assertCreated();
 
         $this->assertDatabaseHas('questionnaire_templates', [
@@ -101,7 +101,7 @@ class QuestionnaireTest extends TestCase
         $this->makeQuestionnaire($store, ['name' => 'Duplicate Q', 'version' => 1]);
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/questionnaires", ['name' => 'Duplicate Q'])
+            ->postJson("/api/v1/stores/{$store->store_name}/questionnaires", ['name' => 'Duplicate Q'])
             ->assertUnprocessable()
             ->assertJsonPath('errors.name.0', 'A questionnaire with this name and version already exists for this store.');
     }
@@ -114,7 +114,7 @@ class QuestionnaireTest extends TestCase
         $this->makeQuestionnaire($store);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/questionnaires")
+            ->getJson("/api/v1/stores/{$store->store_name}/questionnaires")
             ->assertOk();
 
         $this->assertCount(2, $response->json('data.data'));
@@ -129,7 +129,7 @@ class QuestionnaireTest extends TestCase
         $this->makeQuestionnaire($storeB);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$storeA->id}/questionnaires")
+            ->getJson("/api/v1/stores/{$storeA->store_name}/questionnaires")
             ->assertOk();
 
         $this->assertCount(1, $response->json('data.data'));
@@ -142,7 +142,7 @@ class QuestionnaireTest extends TestCase
         $this->makeQuestion($questionnaire);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/questionnaires/{$questionnaire->id}")
+            ->getJson("/api/v1/stores/{$store->store_name}/questionnaires/{$questionnaire->id}")
             ->assertOk();
 
         $this->assertCount(1, $response->json('data.questions'));
@@ -155,7 +155,7 @@ class QuestionnaireTest extends TestCase
         $questionnaire = $this->makeQuestionnaire($storeB);
 
         $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$storeA->id}/questionnaires/{$questionnaire->id}")
+            ->getJson("/api/v1/stores/{$storeA->store_name}/questionnaires/{$questionnaire->id}")
             ->assertNotFound();
     }
 
@@ -165,7 +165,7 @@ class QuestionnaireTest extends TestCase
         $questionnaire = $this->makeQuestionnaire($store);
 
         $this->actingAs($admin)
-            ->patchJson("/api/v1/stores/{$store->id}/questionnaires/{$questionnaire->id}", [
+            ->patchJson("/api/v1/stores/{$store->store_name}/questionnaires/{$questionnaire->id}", [
                 'name' => 'Updated Name',
             ])
             ->assertOk()
@@ -178,7 +178,7 @@ class QuestionnaireTest extends TestCase
         $questionnaire = $this->makeQuestionnaire($store);
 
         $this->actingAs($admin)
-            ->deleteJson("/api/v1/stores/{$store->id}/questionnaires/{$questionnaire->id}")
+            ->deleteJson("/api/v1/stores/{$store->store_name}/questionnaires/{$questionnaire->id}")
             ->assertOk();
 
         $this->assertDatabaseMissing('questionnaire_templates', ['id' => $questionnaire->id]);
@@ -195,7 +195,7 @@ class QuestionnaireTest extends TestCase
         // No UserStoreAccess
 
         $this->actingAs($manager)
-            ->postJson("/api/v1/stores/{$store->id}/questionnaires", ['name' => 'Q'])
+            ->postJson("/api/v1/stores/{$store->store_name}/questionnaires", ['name' => 'Q'])
             ->assertForbidden();
     }
 
@@ -206,7 +206,7 @@ class QuestionnaireTest extends TestCase
         UserStoreAccess::create(['user_id' => $recruiter->id, 'store_id' => $store->id, 'role' => 'recruiter', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->actingAs($recruiter)
-            ->postJson("/api/v1/stores/{$store->id}/questionnaires", ['name' => 'Q'])
+            ->postJson("/api/v1/stores/{$store->store_name}/questionnaires", ['name' => 'Q'])
             ->assertForbidden();
     }
 
@@ -214,7 +214,7 @@ class QuestionnaireTest extends TestCase
     {
         [, $store] = $this->makeStore();
 
-        $this->getJson("/api/v1/stores/{$store->id}/questionnaires")
+        $this->getJson("/api/v1/stores/{$store->store_name}/questionnaires")
             ->assertUnauthorized();
     }
 
@@ -228,7 +228,7 @@ class QuestionnaireTest extends TestCase
         $questionnaire = $this->makeQuestionnaire($store);
 
         $response = $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/questionnaires/{$questionnaire->id}/questions", [
+            ->postJson("/api/v1/stores/{$store->store_name}/questionnaires/{$questionnaire->id}/questions", [
                 'question_key' => 'work_authorization',
                 'label'        => 'Are you legally allowed to work?',
                 'type'         => 'boolean',
@@ -255,7 +255,7 @@ class QuestionnaireTest extends TestCase
         $this->makeQuestion($questionnaire, ['question_key' => 'my_key']);
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/questionnaires/{$questionnaire->id}/questions", [
+            ->postJson("/api/v1/stores/{$store->store_name}/questionnaires/{$questionnaire->id}/questions", [
                 'question_key' => 'my_key',
                 'label'        => 'Duplicate key question',
                 'type'         => 'text',
@@ -274,7 +274,7 @@ class QuestionnaireTest extends TestCase
         $this->makeQuestion($questionnaireA, ['position' => 1, 'question_key' => 'q_a1']);
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/questionnaires/{$questionnaireB->id}/questions", [
+            ->postJson("/api/v1/stores/{$store->store_name}/questionnaires/{$questionnaireB->id}/questions", [
                 'question_key' => 'q_b1',
                 'label'        => 'Same position, different questionnaire',
                 'type'         => 'text',
@@ -292,7 +292,7 @@ class QuestionnaireTest extends TestCase
         $this->makeQuestion($questionnaire, ['question_key' => 'q2', 'position' => 2]);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/questionnaires/{$questionnaire->id}/questions")
+            ->getJson("/api/v1/stores/{$store->store_name}/questionnaires/{$questionnaire->id}/questions")
             ->assertOk();
 
         $this->assertCount(2, $response->json('data.data'));
@@ -305,7 +305,7 @@ class QuestionnaireTest extends TestCase
         $question      = $this->makeQuestion($questionnaire);
 
         $this->actingAs($admin)
-            ->patchJson("/api/v1/stores/{$store->id}/questionnaires/{$questionnaire->id}/questions/{$question->id}", [
+            ->patchJson("/api/v1/stores/{$store->store_name}/questionnaires/{$questionnaire->id}/questions/{$question->id}", [
                 'label' => 'Updated label',
             ])
             ->assertOk()
@@ -319,7 +319,7 @@ class QuestionnaireTest extends TestCase
         $question      = $this->makeQuestion($questionnaire);
 
         $this->actingAs($admin)
-            ->deleteJson("/api/v1/stores/{$store->id}/questionnaires/{$questionnaire->id}/questions/{$question->id}")
+            ->deleteJson("/api/v1/stores/{$store->store_name}/questionnaires/{$questionnaire->id}/questions/{$question->id}")
             ->assertOk();
 
         $this->assertDatabaseMissing('questionnaire_questions', ['id' => $question->id]);
@@ -333,7 +333,7 @@ class QuestionnaireTest extends TestCase
         $questionInB    = $this->makeQuestion($questionnaireB);
 
         $this->actingAs($admin)
-            ->patchJson("/api/v1/stores/{$store->id}/questionnaires/{$questionnaireA->id}/questions/{$questionInB->id}", [
+            ->patchJson("/api/v1/stores/{$store->store_name}/questionnaires/{$questionnaireA->id}/questions/{$questionInB->id}", [
                 'label' => 'Hacked',
             ])
             ->assertNotFound();
@@ -348,7 +348,7 @@ class QuestionnaireTest extends TestCase
 
         foreach ($types as $i => $type) {
             $this->actingAs($admin)
-                ->postJson("/api/v1/stores/{$store->id}/questionnaires/{$questionnaire->id}/questions", [
+                ->postJson("/api/v1/stores/{$store->store_name}/questionnaires/{$questionnaire->id}/questions", [
                     'question_key' => "q_{$type}",
                     'label'        => "Question of type {$type}",
                     'type'         => $type,
@@ -364,7 +364,7 @@ class QuestionnaireTest extends TestCase
         $questionnaire = $this->makeQuestionnaire($store);
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/questionnaires/{$questionnaire->id}/questions", [
+            ->postJson("/api/v1/stores/{$store->store_name}/questionnaires/{$questionnaire->id}/questions", [
                 'question_key' => 'bad_type',
                 'label'        => 'Bad type question',
                 'type'         => 'textarea',
@@ -386,7 +386,7 @@ class QuestionnaireTest extends TestCase
         $stage         = WorkflowStage::factory()->forWorkflow($workflow)->initial()->create();
 
         $response = $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/workflows/{$workflow->id}/stages/{$stage->id}/questionnaires", [
+            ->postJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}/stages/{$stage->id}/questionnaires", [
                 'questionnaire_template_id' => $questionnaire->id,
                 'is_required'               => true,
             ]);
@@ -412,7 +412,7 @@ class QuestionnaireTest extends TestCase
         $stage    = WorkflowStage::factory()->forWorkflow($workflow)->initial()->create();
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/workflows/{$workflow->id}/stages/{$stage->id}/questionnaires", [
+            ->postJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}/stages/{$stage->id}/questionnaires", [
                 'questionnaire_template_id' => $questionnaireB->id,
             ])
             ->assertUnprocessable()
@@ -432,7 +432,7 @@ class QuestionnaireTest extends TestCase
         $workflowA = HiringWorkflow::factory()->forStore($store)->create();
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/workflows/{$workflowA->id}/stages/{$stageB->id}/questionnaires", [
+            ->postJson("/api/v1/stores/{$store->store_name}/workflows/{$workflowA->id}/stages/{$stageB->id}/questionnaires", [
                 'questionnaire_template_id' => $questionnaire->id,
             ])
             ->assertNotFound();
@@ -451,7 +451,7 @@ class QuestionnaireTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/workflows/{$workflow->id}/stages/{$stage->id}/questionnaires", [
+            ->postJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}/stages/{$stage->id}/questionnaires", [
                 'questionnaire_template_id' => $questionnaire->id,
             ])
             ->assertUnprocessable()
@@ -468,7 +468,7 @@ class QuestionnaireTest extends TestCase
         $stageB    = WorkflowStage::factory()->forWorkflow($workflowB)->initial()->create();
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/workflows/{$workflowB->id}/stages/{$stageB->id}/questionnaires", [
+            ->postJson("/api/v1/stores/{$store->store_name}/workflows/{$workflowB->id}/stages/{$stageB->id}/questionnaires", [
                 'questionnaire_template_id' => $questionnaire->id,
             ])
             ->assertNotFound();
@@ -488,7 +488,7 @@ class QuestionnaireTest extends TestCase
         [, , , $application] = $this->makeApplication($store);
 
         $response = $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/applications/{$application->id}/answers", [
+            ->postJson("/api/v1/stores/{$store->store_name}/applications/{$application->id}/answers", [
                 'questionnaire_template_id' => $questionnaire->id,
                 'answers' => [
                     ['questionnaire_question_id' => $q1->id, 'answer' => true],
@@ -518,7 +518,7 @@ class QuestionnaireTest extends TestCase
         [, , , $application] = $this->makeApplication($store);
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/applications/{$application->id}/answers", [
+            ->postJson("/api/v1/stores/{$store->store_name}/applications/{$application->id}/answers", [
                 'questionnaire_template_id' => $questionnaire->id,
                 'answers' => [
                     ['questionnaire_question_id' => $q->id, 'answer' => 5],
@@ -539,7 +539,7 @@ class QuestionnaireTest extends TestCase
         [, , , $application] = $this->makeApplication($store);
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/applications/{$application->id}/answers", [
+            ->postJson("/api/v1/stores/{$store->store_name}/applications/{$application->id}/answers", [
                 'questionnaire_template_id' => $questionnaire->id,
                 'answers' => [
                     ['questionnaire_question_id' => $q->id, 'answer' => 'Yes'],
@@ -562,7 +562,7 @@ class QuestionnaireTest extends TestCase
         [, , , $application] = $this->makeApplication($store);
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/applications/{$application->id}/answers", [
+            ->postJson("/api/v1/stores/{$store->store_name}/applications/{$application->id}/answers", [
                 'questionnaire_template_id' => $questionnaire->id,
                 'answers' => [
                     ['questionnaire_question_id' => $q->id, 'answer' => 'Yes'],
@@ -587,7 +587,7 @@ class QuestionnaireTest extends TestCase
 
         // Submit only the optional question — required one missing
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/applications/{$application->id}/answers", [
+            ->postJson("/api/v1/stores/{$store->store_name}/applications/{$application->id}/answers", [
                 'questionnaire_template_id' => $questionnaire->id,
                 'answers' => [
                     ['questionnaire_question_id' => $optional->id, 'answer' => 'some value'],
@@ -609,7 +609,7 @@ class QuestionnaireTest extends TestCase
 
         // Submit to questionnaire A but include a question from questionnaire B
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/applications/{$application->id}/answers", [
+            ->postJson("/api/v1/stores/{$store->store_name}/applications/{$application->id}/answers", [
                 'questionnaire_template_id' => $questionnaireA->id,
                 'answers' => [
                     ['questionnaire_question_id' => $qA->id, 'answer' => 'valid'],
@@ -630,7 +630,7 @@ class QuestionnaireTest extends TestCase
 
         // First submission
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/applications/{$application->id}/answers", [
+            ->postJson("/api/v1/stores/{$store->store_name}/applications/{$application->id}/answers", [
                 'questionnaire_template_id' => $questionnaire->id,
                 'answers' => [
                     ['questionnaire_question_id' => $q->id, 'answer' => 'original'],
@@ -640,7 +640,7 @@ class QuestionnaireTest extends TestCase
 
         // Second submission — same question, different answer
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/applications/{$application->id}/answers", [
+            ->postJson("/api/v1/stores/{$store->store_name}/applications/{$application->id}/answers", [
                 'questionnaire_template_id' => $questionnaire->id,
                 'answers' => [
                     ['questionnaire_question_id' => $q->id, 'answer' => 'updated'],
@@ -672,7 +672,7 @@ class QuestionnaireTest extends TestCase
 
         // Try to submit answers for appB via storeA
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/applications/{$appB->id}/answers", [
+            ->postJson("/api/v1/stores/{$store->store_name}/applications/{$appB->id}/answers", [
                 'questionnaire_template_id' => $questionnaire->id,
                 'answers' => [
                     ['questionnaire_question_id' => $q->id, 'answer' => 'test'],
@@ -691,7 +691,7 @@ class QuestionnaireTest extends TestCase
         [, , , $application] = $this->makeApplication($store);
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/applications/{$application->id}/answers", [
+            ->postJson("/api/v1/stores/{$store->store_name}/applications/{$application->id}/answers", [
                 'questionnaire_template_id' => $questionnaireB->id,
                 'answers' => [
                     ['questionnaire_question_id' => $qB->id, 'answer' => 'test'],
@@ -716,15 +716,15 @@ class QuestionnaireTest extends TestCase
         $id = $questionnaire->id;
         $qid = $question->id;
 
-        $this->actingAs($manager)->getJson("/api/v1/stores/{$store->id}/questionnaires")->assertForbidden();
-        $this->actingAs($manager)->postJson("/api/v1/stores/{$store->id}/questionnaires", [])->assertForbidden();
-        $this->actingAs($manager)->getJson("/api/v1/stores/{$store->id}/questionnaires/{$id}")->assertForbidden();
-        $this->actingAs($manager)->patchJson("/api/v1/stores/{$store->id}/questionnaires/{$id}", [])->assertForbidden();
-        $this->actingAs($manager)->deleteJson("/api/v1/stores/{$store->id}/questionnaires/{$id}")->assertForbidden();
-        $this->actingAs($manager)->getJson("/api/v1/stores/{$store->id}/questionnaires/{$id}/questions")->assertForbidden();
-        $this->actingAs($manager)->postJson("/api/v1/stores/{$store->id}/questionnaires/{$id}/questions", [])->assertForbidden();
-        $this->actingAs($manager)->patchJson("/api/v1/stores/{$store->id}/questionnaires/{$id}/questions/{$qid}", [])->assertForbidden();
-        $this->actingAs($manager)->deleteJson("/api/v1/stores/{$store->id}/questionnaires/{$id}/questions/{$qid}")->assertForbidden();
+        $this->actingAs($manager)->getJson("/api/v1/stores/{$store->store_name}/questionnaires")->assertForbidden();
+        $this->actingAs($manager)->postJson("/api/v1/stores/{$store->store_name}/questionnaires", [])->assertForbidden();
+        $this->actingAs($manager)->getJson("/api/v1/stores/{$store->store_name}/questionnaires/{$id}")->assertForbidden();
+        $this->actingAs($manager)->patchJson("/api/v1/stores/{$store->store_name}/questionnaires/{$id}", [])->assertForbidden();
+        $this->actingAs($manager)->deleteJson("/api/v1/stores/{$store->store_name}/questionnaires/{$id}")->assertForbidden();
+        $this->actingAs($manager)->getJson("/api/v1/stores/{$store->store_name}/questionnaires/{$id}/questions")->assertForbidden();
+        $this->actingAs($manager)->postJson("/api/v1/stores/{$store->store_name}/questionnaires/{$id}/questions", [])->assertForbidden();
+        $this->actingAs($manager)->patchJson("/api/v1/stores/{$store->store_name}/questionnaires/{$id}/questions/{$qid}", [])->assertForbidden();
+        $this->actingAs($manager)->deleteJson("/api/v1/stores/{$store->store_name}/questionnaires/{$id}/questions/{$qid}")->assertForbidden();
     }
 
     // -----------------------------------------------------------------------

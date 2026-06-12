@@ -47,7 +47,7 @@ class DocumentNestedCreateTest extends TestCase
 
     private function url(Store $store): string
     {
-        return "/api/v1/stores/{$store->id}/document-templates";
+        return "/api/v1/stores/{$store->store_name}/document-templates";
     }
 
     // -----------------------------------------------------------------------

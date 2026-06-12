@@ -47,7 +47,7 @@ class WorkflowManagementTest extends TestCase
         [, $store, $admin] = $this->makeAdminAndStore();
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/workflows", [
+            ->postJson("/api/v1/stores/{$store->store_name}/workflows", [
                 'name' => 'Cashier Hiring',
             ])
             ->assertCreated()
@@ -66,7 +66,7 @@ class WorkflowManagementTest extends TestCase
         [, $store, $manager] = $this->makeManagerAndStore();
 
         $this->actingAs($manager)
-            ->postJson("/api/v1/stores/{$store->id}/workflows", [
+            ->postJson("/api/v1/stores/{$store->store_name}/workflows", [
                 'name' => 'Manager Workflow',
             ])
             ->assertCreated();
@@ -80,7 +80,7 @@ class WorkflowManagementTest extends TestCase
         UserStoreAccess::create(['user_id' => $recruiter->id, 'store_id' => $store->id, 'role' => 'recruiter', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->actingAs($recruiter)
-            ->postJson("/api/v1/stores/{$store->id}/workflows", ['name' => 'Attempted'])
+            ->postJson("/api/v1/stores/{$store->store_name}/workflows", ['name' => 'Attempted'])
             ->assertForbidden();
     }
 
@@ -92,7 +92,7 @@ class WorkflowManagementTest extends TestCase
         UserStoreAccess::create(['user_id' => $viewer->id, 'store_id' => $store->id, 'role' => 'viewer', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->actingAs($viewer)
-            ->postJson("/api/v1/stores/{$store->id}/workflows", ['name' => 'Attempted'])
+            ->postJson("/api/v1/stores/{$store->store_name}/workflows", ['name' => 'Attempted'])
             ->assertForbidden();
     }
 
@@ -105,7 +105,7 @@ class WorkflowManagementTest extends TestCase
         [, $store, $admin] = $this->makeAdminAndStore();
 
         $response = $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/workflows", [
+            ->postJson("/api/v1/stores/{$store->store_name}/workflows", [
                 'name' => 'Cashier Hiring',
                 'stages' => [
                     ['name' => 'Applied', 'stage_type' => 'application', 'position' => 1, 'is_initial' => true],
@@ -131,7 +131,7 @@ class WorkflowManagementTest extends TestCase
 
         // Duplicate positions trigger 422 BEFORE the transaction
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/workflows", [
+            ->postJson("/api/v1/stores/{$store->store_name}/workflows", [
                 'name' => 'Bad Workflow',
                 'stages' => [
                     ['name' => 'Stage A', 'stage_type' => 'application', 'position' => 1, 'is_initial' => true],
@@ -153,7 +153,7 @@ class WorkflowManagementTest extends TestCase
         [, $store, $admin] = $this->makeAdminAndStore();
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/workflows", [
+            ->postJson("/api/v1/stores/{$store->store_name}/workflows", [
                 'name' => 'Bad Workflow',
                 'stages' => [
                     ['name' => 'Stage A', 'stage_type' => 'application', 'position' => 1, 'is_initial' => true],
@@ -169,7 +169,7 @@ class WorkflowManagementTest extends TestCase
         [, $store, $admin] = $this->makeAdminAndStore();
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/workflows", [
+            ->postJson("/api/v1/stores/{$store->store_name}/workflows", [
                 'name' => 'Bad Workflow',
                 'stages' => [
                     ['name' => 'Stage A', 'stage_type' => 'application', 'position' => 1, 'is_initial' => true],
@@ -185,7 +185,7 @@ class WorkflowManagementTest extends TestCase
         [, $store, $admin] = $this->makeAdminAndStore();
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/workflows", [
+            ->postJson("/api/v1/stores/{$store->store_name}/workflows", [
                 'name' => 'Bad Workflow',
                 'stages' => [
                     ['name' => 'Applied', 'stage_type' => 'application', 'position' => 1, 'is_initial' => true],
@@ -206,7 +206,7 @@ class WorkflowManagementTest extends TestCase
         HiringWorkflow::factory()->forStore($store)->count(3)->create();
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/workflows")
+            ->getJson("/api/v1/stores/{$store->store_name}/workflows")
             ->assertOk();
 
         $this->assertCount(3, $response->json('data.data'));
@@ -224,7 +224,7 @@ class WorkflowManagementTest extends TestCase
         HiringWorkflow::factory()->forStore($storeB)->count(3)->create();
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$storeA->id}/workflows")
+            ->getJson("/api/v1/stores/{$storeA->store_name}/workflows")
             ->assertOk();
 
         $this->assertCount(2, $response->json('data.data'));
@@ -240,7 +240,7 @@ class WorkflowManagementTest extends TestCase
         $workflow = HiringWorkflow::factory()->forStore($store)->create();
 
         $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/workflows/{$workflow->id}")
+            ->getJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}")
             ->assertOk()
             ->assertJsonPath('data.id', $workflow->id)
             ->assertJsonStructure(['data' => ['stages']]);
@@ -256,7 +256,7 @@ class WorkflowManagementTest extends TestCase
         $workflow = HiringWorkflow::factory()->forStore($store)->create(['name' => 'Old Name']);
 
         $this->actingAs($admin)
-            ->patchJson("/api/v1/stores/{$store->id}/workflows/{$workflow->id}", ['name' => 'New Name'])
+            ->patchJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}", ['name' => 'New Name'])
             ->assertOk()
             ->assertJsonPath('data.name', 'New Name');
 
@@ -269,7 +269,7 @@ class WorkflowManagementTest extends TestCase
         $workflow = HiringWorkflow::factory()->forStore($store)->create();
 
         $this->actingAs($admin)
-            ->patchJson("/api/v1/stores/{$store->id}/workflows/{$workflow->id}", ['status' => 'active'])
+            ->patchJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}", ['status' => 'active'])
             ->assertOk()
             ->assertJsonPath('data.status', 'active');
 
@@ -282,7 +282,7 @@ class WorkflowManagementTest extends TestCase
         $workflow = HiringWorkflow::factory()->archived()->forStore($store)->create();
 
         $this->actingAs($admin)
-            ->patchJson("/api/v1/stores/{$store->id}/workflows/{$workflow->id}", ['status' => 'draft'])
+            ->patchJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}", ['status' => 'draft'])
             ->assertUnprocessable()
             ->assertJsonPath('errors.status.0', 'Cannot change the status of an archived workflow.');
     }
@@ -297,7 +297,7 @@ class WorkflowManagementTest extends TestCase
         $workflow = HiringWorkflow::factory()->forStore($store)->create();
 
         $this->actingAs($admin)
-            ->deleteJson("/api/v1/stores/{$store->id}/workflows/{$workflow->id}")
+            ->deleteJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}")
             ->assertOk();
 
         $this->assertDatabaseMissing('hiring_workflows', ['id' => $workflow->id]);
@@ -309,7 +309,7 @@ class WorkflowManagementTest extends TestCase
         $workflow = HiringWorkflow::factory()->forStore($store)->create();
 
         $this->actingAs($manager)
-            ->deleteJson("/api/v1/stores/{$store->id}/workflows/{$workflow->id}")
+            ->deleteJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}")
             ->assertForbidden();
     }
 
@@ -329,7 +329,7 @@ class WorkflowManagementTest extends TestCase
 
         // Request routes through storeA but the workflow belongs to storeB
         $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$storeA->id}/workflows/{$workflowB->id}")
+            ->getJson("/api/v1/stores/{$storeA->store_name}/workflows/{$workflowB->id}")
             ->assertNotFound();
     }
 
@@ -341,7 +341,7 @@ class WorkflowManagementTest extends TestCase
         // No UserStoreAccess — manager cannot reach this store
 
         $this->actingAs($manager)
-            ->getJson("/api/v1/stores/{$store->id}/workflows")
+            ->getJson("/api/v1/stores/{$store->store_name}/workflows")
             ->assertForbidden();
     }
 
@@ -349,7 +349,7 @@ class WorkflowManagementTest extends TestCase
     {
         $store = Store::factory()->create();
 
-        $this->getJson("/api/v1/stores/{$store->id}/workflows")
+        $this->getJson("/api/v1/stores/{$store->store_name}/workflows")
             ->assertUnauthorized();
     }
 }

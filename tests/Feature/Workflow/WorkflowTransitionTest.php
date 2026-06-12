@@ -43,7 +43,7 @@ class WorkflowTransitionTest extends TestCase
         $to = WorkflowStage::factory()->forWorkflow($workflow)->create(['position' => 2]);
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/workflows/{$workflow->id}/transitions", [
+            ->postJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}/transitions", [
                 'from_stage_id' => $from->id,
                 'to_stage_id' => $to->id,
             ])
@@ -65,7 +65,7 @@ class WorkflowTransitionTest extends TestCase
         $to = WorkflowStage::factory()->forWorkflow($workflow)->create(['position' => 1]);
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/workflows/{$workflow->id}/transitions", [
+            ->postJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}/transitions", [
                 'from_stage_id' => null,
                 'to_stage_id' => $to->id,
             ])
@@ -93,7 +93,7 @@ class WorkflowTransitionTest extends TestCase
         $toInA = WorkflowStage::factory()->forWorkflow($workflowA)->create(['position' => 1]);
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/workflows/{$workflowA->id}/transitions", [
+            ->postJson("/api/v1/stores/{$store->store_name}/workflows/{$workflowA->id}/transitions", [
                 'from_stage_id' => $fromInB->id,
                 'to_stage_id' => $toInA->id,
             ])
@@ -115,7 +115,7 @@ class WorkflowTransitionTest extends TestCase
         $toInB = WorkflowStage::factory()->forWorkflow($workflowB)->create(['position' => 1]);
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/workflows/{$workflowA->id}/transitions", [
+            ->postJson("/api/v1/stores/{$store->store_name}/workflows/{$workflowA->id}/transitions", [
                 'from_stage_id' => $fromInA->id,
                 'to_stage_id' => $toInB->id,
             ])
@@ -137,7 +137,7 @@ class WorkflowTransitionTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/workflows/{$workflow->id}/transitions", [
+            ->postJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}/transitions", [
                 'from_stage_id' => $from->id,
                 'to_stage_id' => $to->id,
             ])
@@ -158,7 +158,7 @@ class WorkflowTransitionTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/workflows/{$workflow->id}/transitions", [
+            ->postJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}/transitions", [
                 'from_stage_id' => null,
                 'to_stage_id' => $to->id,
             ])
@@ -184,7 +184,7 @@ class WorkflowTransitionTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->patchJson("/api/v1/stores/{$store->id}/workflows/{$workflow->id}/transitions/{$transition->id}", [
+            ->patchJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}/transitions/{$transition->id}", [
                 'is_manual_allowed' => false,
                 'name' => 'Quick Move',
             ])
@@ -211,7 +211,7 @@ class WorkflowTransitionTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->deleteJson("/api/v1/stores/{$store->id}/workflows/{$workflow->id}/transitions/{$transition->id}")
+            ->deleteJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}/transitions/{$transition->id}")
             ->assertOk();
 
         $this->assertDatabaseMissing('workflow_stage_transitions', ['id' => $transition->id]);
@@ -240,7 +240,7 @@ class WorkflowTransitionTest extends TestCase
 
         // Route through workflowA but transition belongs to workflowB
         $this->actingAs($admin)
-            ->deleteJson("/api/v1/stores/{$store->id}/workflows/{$workflowA->id}/transitions/{$transitionInB->id}")
+            ->deleteJson("/api/v1/stores/{$store->store_name}/workflows/{$workflowA->id}/transitions/{$transitionInB->id}")
             ->assertNotFound();
     }
 
@@ -253,7 +253,7 @@ class WorkflowTransitionTest extends TestCase
         // No UserStoreAccess
 
         $this->actingAs($manager)
-            ->getJson("/api/v1/stores/{$store->id}/workflows/{$workflow->id}/transitions")
+            ->getJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}/transitions")
             ->assertForbidden();
     }
 

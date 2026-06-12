@@ -95,7 +95,7 @@ class AutomationRuleTest extends TestCase
         $this->makeRule($store);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/automation-rules")
+            ->getJson("/api/v1/stores/{$store->store_name}/automation-rules")
             ->assertOk();
 
         $this->assertCount(2, $response->json('data.data'));
@@ -110,7 +110,7 @@ class AutomationRuleTest extends TestCase
         $this->makeRule($storeB);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$storeA->id}/automation-rules")
+            ->getJson("/api/v1/stores/{$storeA->store_name}/automation-rules")
             ->assertOk();
 
         $this->assertCount(1, $response->json('data.data'));
@@ -120,7 +120,7 @@ class AutomationRuleTest extends TestCase
     {
         [, $store] = $this->makeStore();
 
-        $this->getJson("/api/v1/stores/{$store->id}/automation-rules")
+        $this->getJson("/api/v1/stores/{$store->store_name}/automation-rules")
             ->assertUnauthorized();
     }
 
@@ -139,7 +139,7 @@ class AutomationRuleTest extends TestCase
         ];
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/automation-rules", $payload)
+            ->postJson("/api/v1/stores/{$store->store_name}/automation-rules", $payload)
             ->assertCreated()
             ->assertJsonPath('data.name', 'Auto-fire on creation')
             ->assertJsonPath('data.trigger', 'application_created');
@@ -157,7 +157,7 @@ class AutomationRuleTest extends TestCase
         $manager = $this->actingAsManager($store);
 
         $this->actingAs($manager)
-            ->postJson("/api/v1/stores/{$store->id}/automation-rules", [
+            ->postJson("/api/v1/stores/{$store->store_name}/automation-rules", [
                 'name'    => 'Manager rule',
                 'trigger' => 'stage_entered',
                 'actions' => [['type' => 'create_activity', 'event_type' => 'stage_activity']],
@@ -172,7 +172,7 @@ class AutomationRuleTest extends TestCase
         \App\Models\UserStoreAccess::create(['user_id' => $viewer->id, 'store_id' => $store->id, 'role' => 'viewer', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->actingAs($viewer)
-            ->postJson("/api/v1/stores/{$store->id}/automation-rules", [
+            ->postJson("/api/v1/stores/{$store->store_name}/automation-rules", [
                 'name'    => 'Viewer rule',
                 'trigger' => 'application_created',
                 'actions' => [['type' => 'create_activity', 'event_type' => 'x']],
@@ -185,7 +185,7 @@ class AutomationRuleTest extends TestCase
         [, $store, $admin] = $this->makeStore();
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/automation-rules", [
+            ->postJson("/api/v1/stores/{$store->store_name}/automation-rules", [
                 'name'    => 'Bad trigger',
                 'trigger' => 'not_a_valid_trigger',
                 'actions' => [['type' => 'create_activity', 'event_type' => 'x']],
@@ -198,7 +198,7 @@ class AutomationRuleTest extends TestCase
         [, $store, $admin] = $this->makeStore();
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/automation-rules", [
+            ->postJson("/api/v1/stores/{$store->store_name}/automation-rules", [
                 'name'    => 'Bad action',
                 'trigger' => 'application_created',
                 'actions' => [['type' => 'explode_database']],
@@ -213,7 +213,7 @@ class AutomationRuleTest extends TestCase
         $otherWorkflow = $this->makeWorkflow($otherStore);
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/automation-rules", [
+            ->postJson("/api/v1/stores/{$store->store_name}/automation-rules", [
                 'name'               => 'Cross-store rule',
                 'trigger'            => 'application_created',
                 'hiring_workflow_id' => $otherWorkflow->id,
@@ -234,7 +234,7 @@ class AutomationRuleTest extends TestCase
         ];
 
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/automation-rules", [
+            ->postJson("/api/v1/stores/{$store->store_name}/automation-rules", [
                 'name'       => 'Score rule',
                 'trigger'    => 'stage_entered',
                 'conditions' => $conditions,
@@ -826,7 +826,7 @@ class AutomationRuleTest extends TestCase
             'actions' => [['type' => 'create_activity', 'event_type' => 'fired_on_create']],
         ]);
 
-        $this->postJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}/apply", [
+        $this->postJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}/apply", [
             'first_name' => 'John',
             'last_name'  => 'Doe',
             'email'      => 'john@example.com',
@@ -982,7 +982,7 @@ class AutomationRuleTest extends TestCase
 
         // ---- act ----
         $this->actingAs($admin)
-            ->postJson("/api/v1/stores/{$store->id}/applications/{$application->id}/answers", [
+            ->postJson("/api/v1/stores/{$store->store_name}/applications/{$application->id}/answers", [
                 'questionnaire_template_id' => $questionnaire->id,
                 'answers'                   => [
                     ['questionnaire_question_id' => $question->id, 'answer' => 'yes'],

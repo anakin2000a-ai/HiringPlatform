@@ -57,7 +57,7 @@ class ApplicationTest extends TestCase
     {
         [, $store, , , $initialStage, $job] = $this->makePublishedJobOpening();
 
-        $response = $this->postJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}/apply", [
+        $response = $this->postJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}/apply", [
             'first_name' => 'Jane',
             'last_name' => 'Smith',
             'email' => 'jane@example.com',
@@ -80,7 +80,7 @@ class ApplicationTest extends TestCase
     {
         [, $store, , , , $job] = $this->makePublishedJobOpening();
 
-        $response = $this->postJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}/apply",
+        $response = $this->postJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}/apply",
             $this->validApplicantPayload()
         );
 
@@ -98,7 +98,7 @@ class ApplicationTest extends TestCase
         WorkflowStage::factory()->forWorkflow($workflow)->initial()->create();
         $job = JobOpening::factory()->withWorkflow($workflow)->create(); // draft
 
-        $this->postJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}/apply",
+        $this->postJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}/apply",
             $this->validApplicantPayload()
         )->assertUnprocessable();
     }
@@ -111,7 +111,7 @@ class ApplicationTest extends TestCase
         WorkflowStage::factory()->forWorkflow($workflow)->initial()->create();
         $job = JobOpening::factory()->withWorkflow($workflow)->closed()->create();
 
-        $this->postJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}/apply",
+        $this->postJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}/apply",
             $this->validApplicantPayload()
         )->assertUnprocessable();
     }
@@ -126,7 +126,7 @@ class ApplicationTest extends TestCase
         WorkflowStage::factory()->forWorkflow($workflowB)->initial()->create();
         $jobInB = JobOpening::factory()->withWorkflow($workflowB)->published()->create();
 
-        $this->postJson("/api/v1/stores/{$storeA->id}/job-openings/{$jobInB->id}/apply",
+        $this->postJson("/api/v1/stores/{$storeA->store_name}/job-openings/{$jobInB->id}/apply",
             $this->validApplicantPayload()
         )->assertNotFound();
     }
@@ -135,7 +135,7 @@ class ApplicationTest extends TestCase
     {
         [, $store, , , $initialStage, $job] = $this->makePublishedJobOpening();
 
-        $this->postJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}/apply",
+        $this->postJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}/apply",
             $this->validApplicantPayload()
         )->assertCreated()
             ->assertJsonPath('data.current_stage_id', $initialStage->id);
@@ -151,7 +151,7 @@ class ApplicationTest extends TestCase
 
         $existing = Applicant::factory()->create(['email' => 'reuse@example.com']);
 
-        $this->postJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}/apply", [
+        $this->postJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}/apply", [
             'first_name' => 'Different',
             'last_name' => 'Name',
             'email' => 'reuse@example.com',
@@ -169,7 +169,7 @@ class ApplicationTest extends TestCase
 
         $existing = Applicant::factory()->noEmail()->withPhone('+15555550100')->create();
 
-        $this->postJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}/apply", [
+        $this->postJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}/apply", [
             'first_name' => 'Different',
             'last_name' => 'Name',
             'phone' => '+15555550100',
@@ -191,7 +191,7 @@ class ApplicationTest extends TestCase
             'job_opening_id' => $job->id,
         ]);
 
-        $this->postJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}/apply", [
+        $this->postJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}/apply", [
             'first_name' => 'Dup',
             'last_name' => 'Applicant',
             'email' => 'dup@example.com',
@@ -207,7 +207,7 @@ class ApplicationTest extends TestCase
         // No stages created — no initial stage
         $job = JobOpening::factory()->withWorkflow($workflow)->published()->create();
 
-        $this->postJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}/apply",
+        $this->postJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}/apply",
             $this->validApplicantPayload()
         )->assertUnprocessable()
             ->assertJsonPath('errors.job_opening_id.0', 'The workflow for this job opening has no initial stage.');
@@ -221,7 +221,7 @@ class ApplicationTest extends TestCase
     {
         [, $store, , , , $job] = $this->makePublishedJobOpening();
 
-        $this->postJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}/apply", [
+        $this->postJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}/apply", [
             'first_name' => 'No',
             'last_name' => 'Contact',
             // no email, no phone
@@ -233,7 +233,7 @@ class ApplicationTest extends TestCase
     {
         [, $store, , , , $job] = $this->makePublishedJobOpening();
 
-        $this->postJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}/apply", [
+        $this->postJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}/apply", [
             'last_name' => 'Doe',
             'email' => 'test@example.com',
         ])->assertUnprocessable()
@@ -252,7 +252,7 @@ class ApplicationTest extends TestCase
         Application::factory()->atStage($initialStage)->create(['job_opening_id' => $job->id]);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/applications")
+            ->getJson("/api/v1/stores/{$store->store_name}/applications")
             ->assertOk();
 
         $this->assertCount(2, $response->json('data.data'));
@@ -279,7 +279,7 @@ class ApplicationTest extends TestCase
         Application::factory()->atStage($stageB)->create(['job_opening_id' => $jobB->id]);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$storeA->id}/applications")
+            ->getJson("/api/v1/stores/{$storeA->store_name}/applications")
             ->assertOk();
 
         $this->assertCount(2, $response->json('data.data'));
@@ -293,7 +293,7 @@ class ApplicationTest extends TestCase
         Application::factory()->atStage($initialStage)->rejected()->create(['job_opening_id' => $job->id]);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/applications?status=active")
+            ->getJson("/api/v1/stores/{$store->store_name}/applications?status=active")
             ->assertOk();
 
         $this->assertCount(1, $response->json('data.data'));
@@ -311,7 +311,7 @@ class ApplicationTest extends TestCase
         $application = Application::factory()->atStage($initialStage)->create(['job_opening_id' => $job->id]);
 
         $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}/applications/{$application->id}")
+            ->getJson("/api/v1/stores/{$store->store_name}/applications/{$application->id}")
             ->assertOk()
             ->assertJsonPath('data.id', $application->id)
             ->assertJsonStructure(['data' => ['applicant', 'current_stage']]);
@@ -331,7 +331,7 @@ class ApplicationTest extends TestCase
         $appInB = Application::factory()->atStage($stageB)->create(['job_opening_id' => $jobB->id]);
 
         $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$storeA->id}/applications/{$appInB->id}")
+            ->getJson("/api/v1/stores/{$storeA->store_name}/applications/{$appInB->id}")
             ->assertNotFound();
     }
 
@@ -346,7 +346,7 @@ class ApplicationTest extends TestCase
         $application = Application::factory()->atStage($initialStage)->create(['job_opening_id' => $job->id]);
 
         $this->actingAs($admin)
-            ->patchJson("/api/v1/stores/{$store->id}/applications/{$application->id}", [
+            ->patchJson("/api/v1/stores/{$store->store_name}/applications/{$application->id}", [
                 'status' => 'rejected',
             ])
             ->assertOk()
@@ -362,7 +362,7 @@ class ApplicationTest extends TestCase
         $application = Application::factory()->atStage($initialStage)->create(['job_opening_id' => $job->id]);
 
         $this->actingAs($admin)
-            ->patchJson("/api/v1/stores/{$store->id}/applications/{$application->id}", ['status' => 'rejected'])
+            ->patchJson("/api/v1/stores/{$store->store_name}/applications/{$application->id}", ['status' => 'rejected'])
             ->assertOk();
 
         $this->assertNotNull($application->fresh()->rejected_at);
@@ -375,7 +375,7 @@ class ApplicationTest extends TestCase
         $application = Application::factory()->atStage($initialStage)->create(['job_opening_id' => $job->id]);
 
         $this->actingAs($admin)
-            ->patchJson("/api/v1/stores/{$store->id}/applications/{$application->id}", ['status' => 'hired'])
+            ->patchJson("/api/v1/stores/{$store->store_name}/applications/{$application->id}", ['status' => 'hired'])
             ->assertOk();
 
         $this->assertNotNull($application->fresh()->hired_at);
@@ -388,7 +388,7 @@ class ApplicationTest extends TestCase
         $application = Application::factory()->atStage($initialStage)->create(['job_opening_id' => $job->id]);
 
         $this->actingAs($admin)
-            ->patchJson("/api/v1/stores/{$store->id}/applications/{$application->id}", [
+            ->patchJson("/api/v1/stores/{$store->store_name}/applications/{$application->id}", [
                 'status' => 'invalid_status',
             ])
             ->assertUnprocessable()
@@ -408,7 +408,7 @@ class ApplicationTest extends TestCase
         $application = Application::factory()->atStage($stage)->create(['job_opening_id' => $job->id]);
 
         $this->actingAs($recruiter)
-            ->patchJson("/api/v1/stores/{$store->id}/applications/{$application->id}", ['status' => 'rejected'])
+            ->patchJson("/api/v1/stores/{$store->store_name}/applications/{$application->id}", ['status' => 'rejected'])
             ->assertForbidden();
     }
 
@@ -424,7 +424,7 @@ class ApplicationTest extends TestCase
         // No UserStoreAccess
 
         $this->actingAs($manager)
-            ->getJson("/api/v1/stores/{$store->id}/applications")
+            ->getJson("/api/v1/stores/{$store->store_name}/applications")
             ->assertForbidden();
     }
 
@@ -432,7 +432,7 @@ class ApplicationTest extends TestCase
     {
         $store = Store::factory()->create();
 
-        $this->getJson("/api/v1/stores/{$store->id}/applications")
+        $this->getJson("/api/v1/stores/{$store->store_name}/applications")
             ->assertUnauthorized();
     }
 
@@ -441,7 +441,7 @@ class ApplicationTest extends TestCase
         [, $store, , , , $job] = $this->makePublishedJobOpening();
 
         // No actingAs — completely unauthenticated
-        $this->postJson("/api/v1/stores/{$store->id}/job-openings/{$job->id}/apply",
+        $this->postJson("/api/v1/stores/{$store->store_name}/job-openings/{$job->id}/apply",
             $this->validApplicantPayload()
         )->assertCreated();
     }

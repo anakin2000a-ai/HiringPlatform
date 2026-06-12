@@ -38,7 +38,7 @@ class QuestionnaireNestedCreateTest extends TestCase
 
     private function url(Store $store): string
     {
-        return "/api/v1/stores/{$store->id}/questionnaires";
+        return "/api/v1/stores/{$store->store_name}/questionnaires";
     }
 
     // -----------------------------------------------------------------------

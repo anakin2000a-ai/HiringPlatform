@@ -14,25 +14,36 @@ class StoreAccessTest extends TestCase
     use RefreshDatabase;
 
     // -----------------------------------------------------------------------
-    // ID-based routing
+    // store_name-based routing
     // -----------------------------------------------------------------------
 
-    public function test_store_is_resolved_by_id(): void
+    public function test_store_is_resolved_by_store_name(): void
     {
         $franchise = FranchiseAccount::factory()->create();
-        $store = Store::factory()->for($franchise)->create(['store_name' => 'Downtown Branch']);
+        $store = Store::factory()->for($franchise)->create(['store_name' => 'downtown-branch']);
         $admin = User::factory()->create();
         UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $store->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
 
         $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}")
+            ->getJson("/api/v1/stores/{$store->store_name}")
             ->assertOk()
             ->assertJsonPath('data.id', $store->id)
-            ->assertJsonPath('data.store_name', 'Downtown Branch');
+            ->assertJsonPath('data.store_name', 'downtown-branch');
     }
 
-    public function test_unknown_id_returns_404(): void
+    public function test_unknown_store_name_returns_404(): void
     {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->getJson('/api/v1/stores/nonexistent-store-xyz')
+            ->assertNotFound();
+    }
+
+    public function test_numeric_string_returns_404_when_no_store_has_that_name(): void
+    {
+        // A pure numeric string like "99999" is treated as a store_name.
+        // Since no store has store_name = "99999", it returns 404.
         $user = User::factory()->create();
 
         $this->actingAs($user)
@@ -52,7 +63,7 @@ class StoreAccessTest extends TestCase
         UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $store->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
 
         $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->id}")
+            ->getJson("/api/v1/stores/{$store->store_name}")
             ->assertOk();
     }
 
@@ -66,7 +77,7 @@ class StoreAccessTest extends TestCase
         UserStoreAccess::create(['user_id' => $admin->id, 'store_id' => $storeA->id, 'role' => 'franchise_admin', 'access_scope' => 'franchise', 'status' => 'active']);
 
         $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$storeB->id}")
+            ->getJson("/api/v1/stores/{$storeB->store_name}")
             ->assertForbidden();
     }
 
@@ -78,7 +89,7 @@ class StoreAccessTest extends TestCase
         UserStoreAccess::create(['user_id' => $manager->id, 'store_id' => $store->id, 'role' => 'store_manager', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->actingAs($manager)
-            ->getJson("/api/v1/stores/{$store->id}")
+            ->getJson("/api/v1/stores/{$store->store_name}")
             ->assertOk();
     }
 
@@ -90,7 +101,7 @@ class StoreAccessTest extends TestCase
         // No UserStoreAccess row created
 
         $this->actingAs($manager)
-            ->getJson("/api/v1/stores/{$store->id}")
+            ->getJson("/api/v1/stores/{$store->store_name}")
             ->assertForbidden();
     }
 
@@ -105,7 +116,7 @@ class StoreAccessTest extends TestCase
         UserStoreAccess::create(['user_id' => $manager->id, 'store_id' => $assignedStoreA->id, 'role' => 'store_manager', 'access_scope' => 'store', 'status' => 'active']);
 
         $this->actingAs($manager)
-            ->getJson("/api/v1/stores/{$storeB->id}")
+            ->getJson("/api/v1/stores/{$storeB->store_name}")
             ->assertForbidden();
     }
 

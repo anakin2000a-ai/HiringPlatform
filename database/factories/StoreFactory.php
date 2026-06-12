@@ -15,7 +15,7 @@ class StoreFactory extends Factory
     {
         return [
             'franchise_account_id' => FranchiseAccount::factory(),
-            'store_name' => fake()->company(),
+            'store_name' => fake()->unique()->company(),
         ];
     }
 }
