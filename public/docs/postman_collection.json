@@ -1,0 +1,660 @@
+{
+  "info": {
+    "name": "Hiring Platform API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Complete API collection for the franchise hiring platform. Import this file and set the environment variables listed below."
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000", "type": "string" },
+    { "key": "token", "value": "", "type": "string", "description": "Bearer token from POST /auth/login" },
+    { "key": "store_id", "value": "1", "type": "string" },
+    { "key": "workflow_id", "value": "1", "type": "string" },
+    { "key": "stage_id", "value": "1", "type": "string" },
+    { "key": "transition_id", "value": "1", "type": "string" },
+    { "key": "questionnaire_id", "value": "1", "type": "string" },
+    { "key": "question_id", "value": "1", "type": "string" },
+    { "key": "job_opening_id", "value": "1", "type": "string" },
+    { "key": "application_id", "value": "1", "type": "string" },
+    { "key": "document_template_id", "value": "1", "type": "string" },
+    { "key": "requirement_id", "value": "1", "type": "string" },
+    { "key": "document_id", "value": "1", "type": "string" },
+    { "key": "automation_rule_id", "value": "1", "type": "string" },
+    { "key": "user_id", "value": "1", "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/health", "host": ["{{base_url}}"], "path": ["api", "v1", "health"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [{ "listen": "test", "script": { "exec": ["if (pm.response.code === 200) { pm.collectionVariables.set('token', pm.response.json().data.token); }"], "type": "text/javascript" } }],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/auth/login", "host": ["{{base_url}}"], "path": ["api", "v1", "auth", "login"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password\"\n}" }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/v1/auth/logout", "host": ["{{base_url}}"], "path": ["api", "v1", "auth", "logout"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/users?per_page=20", "host": ["{{base_url}}"], "path": ["api", "v1", "users"], "query": [{ "key": "per_page", "value": "20" }, { "key": "search", "value": "", "disabled": true }, { "key": "role", "value": "", "disabled": true }, { "key": "status", "value": "", "disabled": true }] }
+          }
+        },
+        {
+          "name": "Get User",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/users/{{user_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "users", "{{user_id}}"] }
+          }
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/users", "host": ["{{base_url}}"], "path": ["api", "v1", "users"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"store_manager\",\n  \"access_scope\": \"store\",\n  \"store_ids\": [1]\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Stores",
+      "item": [
+        {
+          "name": "List Stores",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/stores?per_page=20", "host": ["{{base_url}}"], "path": ["api", "v1", "stores"], "query": [{ "key": "per_page", "value": "20" }, { "key": "search", "value": "", "disabled": true }] }
+          }
+        },
+        {
+          "name": "Create Store",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/stores", "host": ["{{base_url}}"], "path": ["api", "v1", "stores"] },
+            "body": { "mode": "raw", "raw": "{\n  \"store_name\": \"Downtown Branch\"\n}" }
+          }
+        },
+        {
+          "name": "Get Store",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}"] }
+          }
+        },
+        {
+          "name": "Update Store",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"store_name\": \"Updated Branch Name\"\n}" }
+          }
+        },
+        {
+          "name": "Delete Store",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}"] }
+          }
+        },
+        {
+          "name": "Copy Configuration",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/copy-configuration", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "copy-configuration"] },
+            "body": { "mode": "raw", "raw": "{\n  \"target_store_id\": 2,\n  \"copy_workflows\": true,\n  \"copy_questionnaires\": true,\n  \"copy_documents\": true,\n  \"copy_automation_rules\": false\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Workflows",
+      "item": [
+        {
+          "name": "List Workflows",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/workflows?per_page=20", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "workflows"], "query": [{ "key": "per_page", "value": "20" }, { "key": "status", "value": "", "disabled": true }, { "key": "search", "value": "", "disabled": true }] }
+          }
+        },
+        {
+          "name": "Create Workflow",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/workflows", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "workflows"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Standard Hiring\",\n  \"version\": 1,\n  \"stages\": [\n    { \"name\": \"Applied\", \"stage_type\": \"application\", \"position\": 1, \"is_initial\": true },\n    { \"name\": \"Screening\", \"stage_type\": \"screening\", \"position\": 2 },\n    { \"name\": \"Hired\", \"stage_type\": \"hired\", \"position\": 3, \"is_terminal\": true }\n  ]\n}" }
+          }
+        },
+        {
+          "name": "Get Workflow",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/workflows/{{workflow_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "workflows", "{{workflow_id}}"] }
+          }
+        },
+        {
+          "name": "Update Workflow",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/workflows/{{workflow_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "workflows", "{{workflow_id}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"active\"\n}" }
+          }
+        },
+        {
+          "name": "Delete Workflow",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/workflows/{{workflow_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "workflows", "{{workflow_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Workflow Stages",
+      "item": [
+        {
+          "name": "List Stages",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/workflows/{{workflow_id}}/stages?per_page=20", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "workflows", "{{workflow_id}}", "stages"], "query": [{ "key": "per_page", "value": "20" }, { "key": "stage_type", "value": "", "disabled": true }] }
+          }
+        },
+        {
+          "name": "Create Stage",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/workflows/{{workflow_id}}/stages", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "workflows", "{{workflow_id}}", "stages"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Interview\",\n  \"stage_type\": \"interview\",\n  \"position\": 3,\n  \"is_initial\": false,\n  \"is_terminal\": false\n}" }
+          }
+        },
+        {
+          "name": "Update Stage",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/workflows/{{workflow_id}}/stages/{{stage_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "workflows", "{{workflow_id}}", "stages", "{{stage_id}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Technical Interview\"\n}" }
+          }
+        },
+        {
+          "name": "Delete Stage",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/workflows/{{workflow_id}}/stages/{{stage_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "workflows", "{{workflow_id}}", "stages", "{{stage_id}}"] }
+          }
+        },
+        {
+          "name": "Assign Questionnaire to Stage",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/workflows/{{workflow_id}}/stages/{{stage_id}}/questionnaires", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "workflows", "{{workflow_id}}", "stages", "{{stage_id}}", "questionnaires"] },
+            "body": { "mode": "raw", "raw": "{\n  \"questionnaire_template_id\": 1,\n  \"is_required\": true\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Workflow Transitions",
+      "item": [
+        {
+          "name": "List Transitions",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/workflows/{{workflow_id}}/transitions?per_page=20", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "workflows", "{{workflow_id}}", "transitions"], "query": [{ "key": "per_page", "value": "20" }] }
+          }
+        },
+        {
+          "name": "Create Transition",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/workflows/{{workflow_id}}/transitions", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "workflows", "{{workflow_id}}", "transitions"] },
+            "body": { "mode": "raw", "raw": "{\n  \"from_stage_id\": 1,\n  \"to_stage_id\": 2,\n  \"name\": \"Move to Screening\",\n  \"is_manual_allowed\": true,\n  \"is_automatic_allowed\": false\n}" }
+          }
+        },
+        {
+          "name": "Update Transition",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/workflows/{{workflow_id}}/transitions/{{transition_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "workflows", "{{workflow_id}}", "transitions", "{{transition_id}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"is_automatic_allowed\": true\n}" }
+          }
+        },
+        {
+          "name": "Delete Transition",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/workflows/{{workflow_id}}/transitions/{{transition_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "workflows", "{{workflow_id}}", "transitions", "{{transition_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Job Openings",
+      "item": [
+        {
+          "name": "List Job Openings",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/job-openings?per_page=20", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "job-openings"], "query": [{ "key": "per_page", "value": "20" }, { "key": "status", "value": "", "disabled": true }, { "key": "search", "value": "", "disabled": true }] }
+          }
+        },
+        {
+          "name": "Create Job Opening",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/job-openings", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "job-openings"] },
+            "body": { "mode": "raw", "raw": "{\n  \"hiring_workflow_id\": {{workflow_id}},\n  \"title\": \"Senior Developer\",\n  \"description\": \"We are looking for a senior developer.\",\n  \"employment_type\": \"full_time\",\n  \"openings_count\": 2\n}" }
+          }
+        },
+        {
+          "name": "Get Job Opening",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/job-openings/{{job_opening_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "job-openings", "{{job_opening_id}}"] }
+          }
+        },
+        {
+          "name": "Update Job Opening",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/job-openings/{{job_opening_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "job-openings", "{{job_opening_id}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Lead Developer\",\n  \"openings_count\": 3\n}" }
+          }
+        },
+        {
+          "name": "Delete Job Opening",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/job-openings/{{job_opening_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "job-openings", "{{job_opening_id}}"] }
+          }
+        },
+        {
+          "name": "Publish Job Opening",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/job-openings/{{job_opening_id}}/publish", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "job-openings", "{{job_opening_id}}", "publish"] }
+          }
+        },
+        {
+          "name": "Close Job Opening",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/job-openings/{{job_opening_id}}/close", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "job-openings", "{{job_opening_id}}", "close"] }
+          }
+        },
+        {
+          "name": "Apply to Job Opening",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/job-openings/{{job_opening_id}}/apply", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "job-openings", "{{job_opening_id}}", "apply"] },
+            "body": { "mode": "raw", "raw": "{\n  \"first_name\": \"Jane\",\n  \"last_name\": \"Doe\",\n  \"email\": \"jane@example.com\",\n  \"phone\": \"+1234567890\",\n  \"source\": \"linkedin\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Applications",
+      "item": [
+        {
+          "name": "List Applications",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/applications?per_page=20", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "applications"], "query": [{ "key": "per_page", "value": "20" }, { "key": "status", "value": "", "disabled": true }, { "key": "search", "value": "", "disabled": true }, { "key": "job_opening_id", "value": "", "disabled": true }] }
+          }
+        },
+        {
+          "name": "Get Application",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/applications/{{application_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "applications", "{{application_id}}"] }
+          }
+        },
+        {
+          "name": "Update Application",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/applications/{{application_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "applications", "{{application_id}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"active\",\n  \"score\": 85\n}" }
+          }
+        },
+        {
+          "name": "Move Application Stage",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/applications/{{application_id}}/move-stage", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "applications", "{{application_id}}", "move-stage"] },
+            "body": { "mode": "raw", "raw": "{\n  \"to_stage_id\": {{stage_id}},\n  \"reason\": \"Passed initial screening\"\n}" }
+          }
+        },
+        {
+          "name": "List Application Activities",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/applications/{{application_id}}/activities?per_page=20", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "applications", "{{application_id}}", "activities"], "query": [{ "key": "per_page", "value": "20" }, { "key": "event_type", "value": "", "disabled": true }] }
+          }
+        },
+        {
+          "name": "Submit Answers",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/applications/{{application_id}}/answers", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "applications", "{{application_id}}", "answers"] },
+            "body": { "mode": "raw", "raw": "{\n  \"questionnaire_template_id\": {{questionnaire_id}},\n  \"answers\": [\n    { \"questionnaire_question_id\": 1, \"answer\": \"Yes\" }\n  ]\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Questionnaires",
+      "item": [
+        {
+          "name": "List Questionnaire Templates",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/questionnaires?per_page=20", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "questionnaires"], "query": [{ "key": "per_page", "value": "20" }, { "key": "status", "value": "", "disabled": true }] }
+          }
+        },
+        {
+          "name": "Create Questionnaire Template",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/questionnaires", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "questionnaires"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"General Application Form\",\n  \"status\": \"active\",\n  \"questions\": [\n    { \"question_key\": \"years_exp\", \"label\": \"Years of Experience\", \"type\": \"number\", \"is_required\": true, \"position\": 1 }\n  ]\n}" }
+          }
+        },
+        {
+          "name": "Get Questionnaire Template",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/questionnaires/{{questionnaire_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "questionnaires", "{{questionnaire_id}}"] }
+          }
+        },
+        {
+          "name": "Update Questionnaire Template",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/questionnaires/{{questionnaire_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "questionnaires", "{{questionnaire_id}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"inactive\"\n}" }
+          }
+        },
+        {
+          "name": "Delete Questionnaire Template",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/questionnaires/{{questionnaire_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "questionnaires", "{{questionnaire_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Questionnaire Questions",
+      "item": [
+        {
+          "name": "List Questions",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/questionnaires/{{questionnaire_id}}/questions?per_page=20", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "questionnaires", "{{questionnaire_id}}", "questions"], "query": [{ "key": "per_page", "value": "20" }, { "key": "type", "value": "", "disabled": true }] }
+          }
+        },
+        {
+          "name": "Add Question",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/questionnaires/{{questionnaire_id}}/questions", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "questionnaires", "{{questionnaire_id}}", "questions"] },
+            "body": { "mode": "raw", "raw": "{\n  \"question_key\": \"availability\",\n  \"label\": \"Are you available to start immediately?\",\n  \"type\": \"boolean\",\n  \"is_required\": true,\n  \"position\": 2\n}" }
+          }
+        },
+        {
+          "name": "Update Question",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/questionnaires/{{questionnaire_id}}/questions/{{question_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "questionnaires", "{{questionnaire_id}}", "questions", "{{question_id}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"label\": \"Can you start within 2 weeks?\",\n  \"is_required\": false\n}" }
+          }
+        },
+        {
+          "name": "Delete Question",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/questionnaires/{{questionnaire_id}}/questions/{{question_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "questionnaires", "{{questionnaire_id}}", "questions", "{{question_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Document Templates",
+      "item": [
+        {
+          "name": "List Document Templates",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/document-templates?per_page=20", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "document-templates"], "query": [{ "key": "per_page", "value": "20" }, { "key": "requires_signature", "value": "", "disabled": true }, { "key": "document_type", "value": "", "disabled": true }] }
+          }
+        },
+        {
+          "name": "Create Document Template",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/document-templates", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "document-templates"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Offer Letter\",\n  \"document_type\": \"offer\",\n  \"requires_signature\": true,\n  \"description\": \"Standard offer letter for new hires\"\n}" }
+          }
+        },
+        {
+          "name": "Get Document Template",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/document-templates/{{document_template_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "document-templates", "{{document_template_id}}"] }
+          }
+        },
+        {
+          "name": "Update Document Template",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/document-templates/{{document_template_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "document-templates", "{{document_template_id}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Updated Offer Letter\",\n  \"requires_signature\": false\n}" }
+          }
+        },
+        {
+          "name": "Delete Document Template",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/document-templates/{{document_template_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "document-templates", "{{document_template_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Stage Document Requirements",
+      "item": [
+        {
+          "name": "List Requirements for Stage",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/workflow-stages/{{stage_id}}/document-requirements?per_page=20", "host": ["{{base_url}}"], "path": ["api", "v1", "workflow-stages", "{{stage_id}}", "document-requirements"], "query": [{ "key": "per_page", "value": "20" }, { "key": "is_required", "value": "", "disabled": true }] }
+          }
+        },
+        {
+          "name": "Add Requirement to Stage",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/workflow-stages/{{stage_id}}/document-requirements", "host": ["{{base_url}}"], "path": ["api", "v1", "workflow-stages", "{{stage_id}}", "document-requirements"] },
+            "body": { "mode": "raw", "raw": "{\n  \"document_template_id\": {{document_template_id}},\n  \"is_required\": true,\n  \"due_days_after_stage_entry\": 5\n}" }
+          }
+        },
+        {
+          "name": "Get Requirement",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/stage-document-requirements/{{requirement_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stage-document-requirements", "{{requirement_id}}"] }
+          }
+        },
+        {
+          "name": "Update Requirement",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/stage-document-requirements/{{requirement_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stage-document-requirements", "{{requirement_id}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"is_required\": false,\n  \"due_days_after_stage_entry\": 10\n}" }
+          }
+        },
+        {
+          "name": "Delete Requirement",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/api/v1/stage-document-requirements/{{requirement_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "stage-document-requirements", "{{requirement_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Applicant Documents",
+      "item": [
+        {
+          "name": "List Applicant Documents",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/applications/{{application_id}}/documents?per_page=20", "host": ["{{base_url}}"], "path": ["api", "v1", "applications", "{{application_id}}", "documents"], "query": [{ "key": "per_page", "value": "20" }, { "key": "status", "value": "", "disabled": true }] }
+          }
+        },
+        {
+          "name": "Initiate Document",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/applications/{{application_id}}/documents", "host": ["{{base_url}}"], "path": ["api", "v1", "applications", "{{application_id}}", "documents"] },
+            "body": { "mode": "raw", "raw": "{\n  \"stage_document_requirement_id\": {{requirement_id}}\n}" }
+          }
+        },
+        {
+          "name": "Submit Document",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/v1/applicant-documents/{{document_id}}/submit", "host": ["{{base_url}}"], "path": ["api", "v1", "applicant-documents", "{{document_id}}", "submit"] }
+          }
+        },
+        {
+          "name": "Sign Document",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/applicant-documents/{{document_id}}/sign", "host": ["{{base_url}}"], "path": ["api", "v1", "applicant-documents", "{{document_id}}", "sign"] },
+            "body": { "mode": "raw", "raw": "{\n  \"external_signature_id\": \"sig_abc123\"\n}" }
+          }
+        },
+        {
+          "name": "Approve Document",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/v1/applicant-documents/{{document_id}}/approve", "host": ["{{base_url}}"], "path": ["api", "v1", "applicant-documents", "{{document_id}}", "approve"] }
+          }
+        },
+        {
+          "name": "Reject Document",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/applicant-documents/{{document_id}}/reject", "host": ["{{base_url}}"], "path": ["api", "v1", "applicant-documents", "{{document_id}}", "reject"] },
+            "body": { "mode": "raw", "raw": "{\n  \"rejected_reason\": \"Document is illegible. Please resubmit.\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Automation Rules",
+      "item": [
+        {
+          "name": "List Automation Rules",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/automation-rules?per_page=20", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "automation-rules"], "query": [{ "key": "per_page", "value": "20" }, { "key": "trigger", "value": "", "disabled": true }, { "key": "is_active", "value": "", "disabled": true }] }
+          }
+        },
+        {
+          "name": "Create Automation Rule",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/stores/{{store_id}}/automation-rules", "host": ["{{base_url}}"], "path": ["api", "v1", "stores", "{{store_id}}", "automation-rules"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Auto-reject low score\",\n  \"trigger\": \"answer_submitted\",\n  \"conditions\": {\n    \"group\": \"all\",\n    \"rules\": [{ \"field\": \"score\", \"operator\": \"lt\", \"value\": 50 }]\n  },\n  \"actions\": [\n    { \"type\": \"reject_application\" }\n  ],\n  \"priority\": 10,\n  \"is_active\": true\n}" }
+          }
+        },
+        {
+          "name": "Get Automation Rule",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/automation-rules/{{automation_rule_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "automation-rules", "{{automation_rule_id}}"] }
+          }
+        },
+        {
+          "name": "Update Automation Rule",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/v1/automation-rules/{{automation_rule_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "automation-rules", "{{automation_rule_id}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"is_active\": false\n}" }
+          }
+        },
+        {
+          "name": "Delete Automation Rule",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/api/v1/automation-rules/{{automation_rule_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "automation-rules", "{{automation_rule_id}}"] }
+          }
+        }
+      ]
+    }
+  ]
+}

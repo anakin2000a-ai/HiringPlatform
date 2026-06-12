@@ -32,7 +32,7 @@ class CreateAutomationRuleRequest extends FormRequest
         return [
             'hiring_workflow_id'   => ['nullable', 'integer', 'exists:hiring_workflows,id'],
             'workflow_stage_id'    => ['nullable', 'integer', 'exists:workflow_stages,id'],
-            'name'                 => ['required', 'string', 'max:255'],
+            'name'                 => ['required', 'string', 'max:255',Rule::unique('automation_rules', 'name')],
             'trigger'              => ['required', 'string', Rule::in(self::TRIGGERS)],
             'conditions'           => ['nullable', 'array'],
             'conditions.group'     => ['sometimes', 'string', Rule::in(['all', 'any'])],

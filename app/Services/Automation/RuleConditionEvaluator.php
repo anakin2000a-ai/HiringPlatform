@@ -49,7 +49,9 @@ class RuleConditionEvaluator
             'current_stage' => $key !== null ? ($context['current_stage'][$key] ?? null) : null,
             'answers'       => $key !== null ? ($context['answers'][$key] ?? null) : null,
             'documents'     => $this->resolveDocumentField($key, $sub, $context),
-            default         => null,
+            // Bare field name (no prefix) — fall back to application context shorthand.
+            // e.g. "score" resolves to application.score, "status" to application.status.
+            default         => $context['application'][$prefix] ?? null,
         };
     }
 
@@ -75,12 +77,12 @@ class RuleConditionEvaluator
     private function applyOperator(string $operator, mixed $actual, mixed $value): bool
     {
         return match ($operator) {
-            'equals'                => $actual == $value,
-            'not_equals'            => $actual != $value,
-            'greater_than'          => is_numeric($actual) && is_numeric($value) && $actual > $value,
-            'greater_than_or_equal' => is_numeric($actual) && is_numeric($value) && $actual >= $value,
-            'less_than'             => is_numeric($actual) && is_numeric($value) && $actual < $value,
-            'less_than_or_equal'    => is_numeric($actual) && is_numeric($value) && $actual <= $value,
+            'equals',    'eq'  => $actual == $value,
+            'not_equals','ne'  => $actual != $value,
+            'greater_than',          'gt'  => is_numeric($actual) && is_numeric($value) && $actual > $value,
+            'greater_than_or_equal', 'gte' => is_numeric($actual) && is_numeric($value) && $actual >= $value,
+            'less_than',             'lt'  => is_numeric($actual) && is_numeric($value) && $actual < $value,
+            'less_than_or_equal',    'lte' => is_numeric($actual) && is_numeric($value) && $actual <= $value,
             'contains'              => is_string($actual) && is_string($value) && str_contains($actual, $value),
             'not_contains'          => !(is_string($actual) && is_string($value) && str_contains($actual, $value)),
             'in'                    => in_array($actual, (array) $value, false),

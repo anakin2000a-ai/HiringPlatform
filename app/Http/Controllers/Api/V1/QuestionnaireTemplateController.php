@@ -29,7 +29,7 @@ class QuestionnaireTemplateController extends Controller
             'search'   => ['sometimes', 'string', 'max:255'],
         ]);
 
-        $query = QuestionnaireTemplate::where('store_id', $store->id);
+        $query = QuestionnaireTemplate::where('store_id', $store->id)->with('questions','stageAssignments');
 
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
@@ -62,7 +62,7 @@ class QuestionnaireTemplateController extends Controller
         if (! $this->questionnaireBelongsToStore($questionnaire, $store)) {
             return ApiResponse::notFound('Questionnaire not found');
         }
-
+        $questionnaire->load('questions','stageAssignments');
         return ApiResponse::success(
             new QuestionnaireTemplateResource($questionnaire->load('questions'))
         );

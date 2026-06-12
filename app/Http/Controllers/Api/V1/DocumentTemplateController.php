@@ -30,7 +30,7 @@ class DocumentTemplateController extends Controller
             'search'            => ['sometimes', 'string', 'max:255'],
         ]);
 
-        $query = DocumentTemplate::where('store_id', $store->id);
+        $query = DocumentTemplate::where('store_id', $store->id)->with('stageRequirements');
 
         if ($request->filled('document_type')) {
             $query->where('document_type', $request->input('document_type'));
@@ -63,9 +63,12 @@ class DocumentTemplateController extends Controller
 
     public function show(Store $store, DocumentTemplate $documentTemplate): JsonResponse
     {
+        
         if (! $this->templateBelongsToStore($documentTemplate, $store)) {
             return ApiResponse::notFound('Document template not found');
         }
+        $documentTemplate->load('stageRequirements');
+
 
         return ApiResponse::success(new DocumentTemplateResource($documentTemplate));
     }

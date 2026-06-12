@@ -7,8 +7,12 @@ use App\Models\AutomationRule;
 use App\Models\FranchiseAccount;
 use App\Models\HiringWorkflow;
 use App\Models\JobOpening;
+use App\Models\OutboxEvent;
+use App\Models\QuestionnaireQuestion;
+use App\Models\QuestionnaireTemplate;
 use App\Models\Store;
 use App\Models\User;
+use App\Models\UserStoreAccess;
 use App\Models\WorkflowActivity;
 use App\Models\WorkflowStage;
 use App\Models\WorkflowStageTransition;
@@ -833,6 +837,196 @@ class AutomationRuleTest extends TestCase
         $this->assertDatabaseHas('workflow_activities', [
             'application_id' => $app->id,
             'event_type'     => 'fired_on_create',
+        ]);
+    }
+
+    // -----------------------------------------------------------------------
+    // Operator aliases (lt / gt / lte / gte / eq / ne)
+    // -----------------------------------------------------------------------
+
+    public function test_lt_operator_alias_works(): void
+    {
+        [, $store] = $this->makeStore();
+        $workflow  = $this->makeWorkflow($store);
+        $stage     = $this->makeInitialStage($workflow);
+        $app       = $this->makeApplication($store, $stage);
+        $app->update(['score' => 30]);
+
+        $this->makeRule($store, [
+            'trigger'    => 'application_created',
+            'conditions' => [
+                'group' => 'all',
+                'rules' => [['field' => 'application.score', 'operator' => 'lt', 'value' => 90]],
+            ],
+            'actions' => [['type' => 'create_activity', 'event_type' => 'lt_alias_fired']],
+        ]);
+
+        app(\App\Services\Automation\AutomationRuleEngine::class)
+            ->evaluate('application_created', $app);
+
+        $this->assertDatabaseHas('workflow_activities', [
+            'application_id' => $app->id,
+            'event_type'     => 'lt_alias_fired',
+        ]);
+    }
+
+    public function test_bare_score_field_resolves_to_application_score(): void
+    {
+        [, $store] = $this->makeStore();
+        $workflow  = $this->makeWorkflow($store);
+        $stage     = $this->makeInitialStage($workflow);
+        $app       = $this->makeApplication($store, $stage);
+        $app->update(['score' => 30]);
+
+        $this->makeRule($store, [
+            'trigger'    => 'application_created',
+            'conditions' => [
+                'group' => 'all',
+                'rules' => [['field' => 'score', 'operator' => 'lt', 'value' => 90]],
+            ],
+            'actions' => [['type' => 'create_activity', 'event_type' => 'bare_score_fired']],
+        ]);
+
+        app(\App\Services\Automation\AutomationRuleEngine::class)
+            ->evaluate('application_created', $app);
+
+        $this->assertDatabaseHas('workflow_activities', [
+            'application_id' => $app->id,
+            'event_type'     => 'bare_score_fired',
+        ]);
+    }
+
+    // -----------------------------------------------------------------------
+    // Integration — answer_submitted triggers reject_application
+    // -----------------------------------------------------------------------
+
+    /**
+     * Full end-to-end flow:
+     *   - Application in Screening stage, score = 30
+     *   - Rule: answer_submitted + score lt 90 → reject_application
+     *   - Submit answers via API
+     *   - Assert application is rejected + all expected activities and outbox events
+     */
+    public function test_answer_submitted_triggers_reject_when_score_below_threshold(): void
+    {
+        Queue::fake();
+
+        // ---- world setup ----
+        $franchise = FranchiseAccount::factory()->create();
+        $store     = Store::factory()->for($franchise)->create();
+        $admin     = User::factory()->create();
+        UserStoreAccess::create([
+            'user_id'      => $admin->id,
+            'store_id'     => $store->id,
+            'role'         => 'franchise_admin',
+            'access_scope' => 'franchise',
+            'status'       => 'active',
+        ]);
+
+        $workflow  = HiringWorkflow::factory()->forStore($store)->create();
+        $screening = WorkflowStage::factory()->forWorkflow($workflow)->initial()->create([
+            'name'       => 'Screening',
+            'stage_type' => 'screening',
+        ]);
+        $rejected = WorkflowStage::factory()->forWorkflow($workflow)->create([
+            'name'        => 'Rejected',
+            'stage_type'  => 'rejected',
+            'is_terminal' => true,
+        ]);
+
+        // Automatic transition from Screening → Rejected required by reject_application action.
+        WorkflowStageTransition::factory()->create([
+            'hiring_workflow_id'   => $workflow->id,
+            'from_stage_id'        => $screening->id,
+            'to_stage_id'          => $rejected->id,
+            'is_manual_allowed'    => false,
+            'is_automatic_allowed' => true,
+        ]);
+
+        $job = JobOpening::factory()->create([
+            'store_id'           => $store->id,
+            'hiring_workflow_id' => $workflow->id,
+            'status'             => 'published',
+        ]);
+
+        $application = Application::factory()->atStage($screening)->create([
+            'job_opening_id' => $job->id,
+            'score'          => 30,
+        ]);
+
+        // Questionnaire + question in the same store
+        $questionnaire = QuestionnaireTemplate::factory()->forStore($store)->create(['status' => 'active']);
+        $question      = QuestionnaireQuestion::factory()->forQuestionnaire($questionnaire)->create([
+            'type'        => 'text',
+            'is_required' => false,
+            'position'    => 1,
+        ]);
+
+        // Automation rule: answer_submitted, score lt 90, reject_application
+        AutomationRule::factory()->forStore($store)->create([
+            'hiring_workflow_id' => $workflow->id,
+            'workflow_stage_id'  => $screening->id,
+            'trigger'            => 'answer_submitted',
+            'is_active'          => true,
+            'priority'           => 10,
+            'conditions'         => [
+                'group' => 'all',
+                'rules' => [
+                    ['field' => 'score', 'operator' => 'lt', 'value' => 90],
+                ],
+            ],
+            'actions' => [
+                ['type' => 'reject_application'],
+            ],
+        ]);
+
+        // ---- act ----
+        $this->actingAs($admin)
+            ->postJson("/api/v1/stores/{$store->id}/applications/{$application->id}/answers", [
+                'questionnaire_template_id' => $questionnaire->id,
+                'answers'                   => [
+                    ['questionnaire_question_id' => $question->id, 'answer' => 'yes'],
+                ],
+            ])
+            ->assertCreated();
+
+        // ---- assert applicant answer saved ----
+        $this->assertDatabaseHas('applicant_answers', [
+            'application_id'            => $application->id,
+            'questionnaire_question_id' => $question->id,
+        ]);
+
+        // ---- assert application rejected ----
+        $this->assertDatabaseHas('applications', [
+            'id'               => $application->id,
+            'status'           => 'rejected',
+            'current_stage_id' => $rejected->id,
+        ]);
+        $this->assertNotNull(
+            $application->fresh()->rejected_at,
+            'rejected_at must be set when application is rejected by automation.'
+        );
+
+        // ---- assert workflow activities ----
+        $this->assertDatabaseHas('workflow_activities', [
+            'application_id' => $application->id,
+            'event_type'     => 'answers_submitted',
+        ]);
+
+        $this->assertDatabaseHas('workflow_activities', [
+            'application_id' => $application->id,
+            'event_type'     => 'stage_moved',
+            'actor_type'     => 'automation',
+        ]);
+
+        // ---- assert outbox events ----
+        $this->assertDatabaseHas('outbox_events', [
+            'event_type' => 'hiring.questionnaire.submitted',
+        ]);
+
+        // hiring.v1.application.rejected is the versioned terminal event from ApplicationStageService
+        $this->assertDatabaseHas('outbox_events', [
+            'event_type' => 'hiring.v1.application.rejected',
         ]);
     }
 
