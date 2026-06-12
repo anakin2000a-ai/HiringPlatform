@@ -28,27 +28,27 @@ class StoreCreatedHandler implements EventHandlerInterface
     {
         $id                 = $data['id'] ?? null;
         $storeName          = $data['store_name'] ?? null;
-        $franchiseAccountId = $data['franchise_account_id'] ?? null;
+        // $franchiseAccountId = $data['franchise_account_id'] ?? null;
 
         if ($id === null || $storeName === null) {
             return;
         }
 
-        if ($franchiseAccountId === null) {
-            throw new RuntimeException(
-                'auth.v1.store.created is missing franchise_account_id; cannot create local store.'
-            );
-        }
+        // if ($franchiseAccountId === null) {
+        //     throw new RuntimeException(
+        //         'auth.v1.store.created is missing franchise_account_id; cannot create local store.'
+        //     );
+        // }
 
-        DB::transaction(function () use ($id, $storeName, $franchiseAccountId): void {
-            $franchise = FranchiseAccount::find($franchiseAccountId);
+        DB::transaction(function () use ($id, $storeName): void {
+            // $franchise = FranchiseAccount::find($franchiseAccountId);
 
-            if ($franchise === null) {
-                throw new RuntimeException(
-                    "franchise_account_id {$franchiseAccountId} does not exist locally. " .
-                    'Retry after the franchise is synchronized.'
-                );
-            }
+            // if ($franchise === null) {
+            //     throw new RuntimeException(
+            //         "franchise_account_id {$franchiseAccountId} does not exist locally. " .
+            //         'Retry after the franchise is synchronized.'
+            //     );
+            // }
 
             $store = Store::find($id);
 
@@ -60,7 +60,7 @@ class StoreCreatedHandler implements EventHandlerInterface
 
             Store::forceCreate([
                 'id'                   => $id,
-                'franchise_account_id' => $franchiseAccountId,
+                // 'franchise_account_id' => $franchiseAccountId,
                 'store_name'           => $storeName,
                 'status'               => 'active',
             ]);

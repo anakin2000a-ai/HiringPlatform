@@ -26,6 +26,7 @@ class StoreUpdatedHandler implements EventHandlerInterface
     public function handle(array $data): void
     {
         $id = $data['id'] ?? null;
+
         if ($id === null) {
             return;
         }
@@ -33,42 +34,26 @@ class StoreUpdatedHandler implements EventHandlerInterface
         $store = Store::find($id);
 
         if ($store === null) {
-            $storeName          = $data['store_name'] ?? null;
-            $franchiseAccountId = $data['franchise_account_id'] ?? null;
+            $storeName = $data['store_name'] ?? null;
 
-            if ($storeName === null || $franchiseAccountId === null) {
+            if ($storeName === null) {
                 return;
             }
 
-            DB::transaction(function () use ($id, $storeName, $franchiseAccountId): void {
-                $franchise = FranchiseAccount::find($franchiseAccountId);
-
-                if ($franchise === null) {
-                    throw new RuntimeException(
-                        "franchise_account_id {$franchiseAccountId} does not exist locally. " .
-                        'Retry after the franchise is synchronized.'
-                    );
-                }
-
+            DB::transaction(function () use ($id, $storeName, $data): void {
                 Store::forceCreate([
-                    'id'                   => $id,
-                    'franchise_account_id' => $franchiseAccountId,
-                    'store_name'           => $storeName,
-                    'status'               => 'active',
+                    'id'         => $id,
+                    'store_name' => $storeName,
+                    'status'     => $data['status'] ?? 'active',
                 ]);
             });
 
             return;
         }
 
-        $updates = array_intersect_key($data, array_flip(['store_name']));
-
-        if (isset($data['franchise_account_id'])) {
-            $franchise = FranchiseAccount::find($data['franchise_account_id']);
-            if ($franchise !== null) {
-                $updates['franchise_account_id'] = $data['franchise_account_id'];
-            }
-        }
+        $updates = array_intersect_key($data, array_flip([
+            'store_name',
+        ]));
 
         if (isset($data['status']) && in_array($data['status'], ['active', 'inactive'], true)) {
             $updates['status'] = $data['status'];

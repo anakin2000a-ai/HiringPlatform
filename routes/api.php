@@ -39,11 +39,12 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::middleware('auth:sanctum')->group(function (): void {
 
         // Users
-        Route::apiResource('users', UserController::class)->only(['index', 'store', 'show']);
+        // Route::apiResource('users', UserController::class)->only(['index', 'store', 'show']);
+        Route::apiResource('users', UserController::class)->only(['index']);
 
         // Stores — collection routes (no store model in URL)
         Route::get('stores', [StoreController::class, 'index']);
-        Route::post('stores', [StoreController::class, 'store']);
+        // Route::post('stores', [StoreController::class, 'store']);
 
         // Phase 8: Stage document requirements (store resolved through stage->workflow->store)
         // Route::get('workflow-stages/{stage}/document-requirements', [StageDocumentRequirementController::class, 'index']);
