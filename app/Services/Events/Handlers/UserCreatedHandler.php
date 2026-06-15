@@ -5,8 +5,7 @@ namespace App\Services\Events\Handlers;
 use App\Models\User;
 use App\Services\Events\EventHandlerInterface;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-
+ 
 class UserCreatedHandler implements EventHandlerInterface
 {
     /**

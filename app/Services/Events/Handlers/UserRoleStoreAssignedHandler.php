@@ -41,8 +41,7 @@ class UserRoleStoreAssignedHandler implements EventHandlerInterface
         }
 
         $this->assertUserExists((int) $userId);
-        $this->assertStoreExists((int) $storeId);
-
+$this->assertStoreExists($storeId); 
         $role  = (isset($assignment['role']) && in_array($assignment['role'], self::ALLOWED_ROLES, true))
             ? $assignment['role']
             : 'store_manager';
@@ -52,9 +51,9 @@ class UserRoleStoreAssignedHandler implements EventHandlerInterface
 
         DB::transaction(static function () use ($userId, $storeId, $role, $scope): void {
             UserStoreAccess::firstOrCreate(
-                ['user_id' => (int) $userId, 'store_id' => (int) $storeId],
-                ['role' => $role, 'access_scope' => $scope, 'status' => UserStatus::Active]
-            );
+    ['user_id' => (int) $userId, 'store_id' => $storeId],
+    ['role' => $role, 'access_scope' => $scope, 'status' => UserStatus::Active]
+);
         });
     }
 
@@ -68,8 +67,7 @@ class UserRoleStoreAssignedHandler implements EventHandlerInterface
         }
     }
 
-    private function assertStoreExists(int $storeId): void
-    {
+private function assertStoreExists(string|int $storeId): void    {
         if (! Store::where('id', $storeId)->exists()) {
             throw new RuntimeException(
                 "store_id {$storeId} does not exist locally. " .

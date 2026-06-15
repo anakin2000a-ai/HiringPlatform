@@ -246,161 +246,291 @@ class JetStreamConsumer
         return $this->consumerCache[$key] = $consumer;
     }
 
-    private function handleMessage($msg, string $streamName, string $durable): void
-    {
-        $subject = $this->getMsgSubject($msg);
-        $reply   = $this->getMsgReply($msg);
+ 
+private function handleMessage($msg, string $streamName, string $durable): void
+{
+    Log::warning('DEBUG_NATS_HANDLE_MESSAGE_REACHED', [
+    'class' => __CLASS__,
+    'stream' => $streamName,
+    'durable' => $durable,
+    'msg_class' => is_object($msg) ? get_class($msg) : gettype($msg),
+]);
+    $msgSubject = $this->getMsgSubject($msg);
+    $reply      = $this->getMsgReply($msg);
 
-        // HARD RULE:
-        // Real JetStream deliveries ALWAYS have a reply that starts with $JS.ACK.
-        // Your "handler.*" junk has reply=null and should NOT be acked/termed/nacked.
-        if (!$this->isJetStreamDelivery($reply)) {
-            return;
-        }
+    // HARD RULE:
+    // Real JetStream deliveries ALWAYS have a reply that starts with $JS.ACK.
+    // Non-JetStream/internal messages should be ignored, not acked/nacked.
+    if (!$this->isJetStreamDelivery($reply)) {
+        return;
+    }
 
-        // Domain allowlist: ignore anything not matching your domain prefixes
-        if (!$this->isAllowedDomainSubject($subject)) {
-            // ACK/TERM so it does not keep coming back to this consumer.
-            $this->ackOrTermSafe($msg, $streamName, $durable, 'subject_not_allowed');
-            return;
-        }
+    $raw = $this->extractBody($msg);
 
-        $raw = $this->extractBody($msg);
+    if ($raw === '') {
+        Log::warning('JetStream message has empty payload - ACKed/TERMed', [
+            'stream'      => $streamName,
+            'consumer'    => $durable,
+            'msg_subject' => $msgSubject,
+            'reply'       => $reply,
+            'class'       => is_object($msg) ? get_class($msg) : gettype($msg),
+        ]);
 
-        if ($raw === '') {
-            // For real JetStream delivery with empty payload: poison → ACK/TERM it once.
-            $this->ackOrTermSafe($msg, $streamName, $durable, 'empty_payload');
-            return;
-        }
+        $this->ackOrTermSafe($msg, $streamName, $durable, 'empty_payload');
+        return;
+    }
 
-        $event = json_decode($raw, true);
+    $event = json_decode($raw, true);
 
-        if (!is_array($event)) {
-            $this->ackOrTermSafe($msg, $streamName, $durable, 'non_json_payload');
-            return;
-        }
+    if (!is_array($event)) {
+        Log::warning('JetStream message has non-JSON payload - ACKed/TERMed', [
+            'stream'      => $streamName,
+            'consumer'    => $durable,
+            'msg_subject' => $msgSubject,
+            'raw'         => $raw,
+        ]);
 
-        // Support Shape A (event_id/event_type/data) and Shape B (id/subject/payload).
-        $eventId    = (string) ($event['id'] ?? $event['event_id'] ?? '');
-        $evtSubject = (string) ($event['subject'] ?? $event['type'] ?? $event['event_type'] ?? $subject ?? '');
-        $data       = $event['data'] ?? $event['payload'] ?? [];
+        $this->ackOrTermSafe($msg, $streamName, $durable, 'non_json_payload');
+        return;
+    }
 
-        if ($eventId === '' || $evtSubject === '') {
-            $this->ackOrTermSafe($msg, $streamName, $durable, 'missing_id_or_subject');
-            return;
-        }
+    // Support Shape A:
+    // {"event_id":"...","event_type":"auth.v1.user.created","data":{...}}
+    //
+    // Support Shape B:
+    // {"id":"...","subject":"auth.v1.user.created","payload":{...}}
+    $eventId = (string) ($event['event_id'] ?? $event['id'] ?? '');
 
+    $evtSubject = (string) (
+        $event['event_type']
+        ?? $event['subject']
+        ?? $event['type']
+        ?? $msgSubject
+        ?? ''
+    );
 
-        DB::beginTransaction();
+    $data = $event['data'] ?? $event['payload'] ?? [];
 
-        try {
-            // Idempotency + attempts counter
+    if ($eventId === '' || $evtSubject === '') {
+        Log::warning('JetStream message missing event id or subject - ACKed/TERMed', [
+            'stream'      => $streamName,
+            'consumer'    => $durable,
+            'msg_subject' => $msgSubject,
+            'event'       => $event,
+        ]);
+
+        $this->ackOrTermSafe($msg, $streamName, $durable, 'missing_id_or_subject');
+        return;
+    }
+
+    // Domain allowlist must be checked against the logical event subject,
+    // not only the transport subject. Basis/NATS may not expose msg subject reliably.
+    if (!$this->isAllowedDomainSubject($evtSubject)) {
+        Log::warning('JetStream event subject not allowed - ACKed/TERMed', [
+            'stream'        => $streamName,
+            'consumer'      => $durable,
+            'msg_subject'   => $msgSubject,
+            'event_subject' => $evtSubject,
+            'event_id'      => $eventId,
+        ]);
+
+        $this->ackOrTermSafe($msg, $streamName, $durable, 'subject_not_allowed');
+        return;
+    }
+
+    if (!is_array($data)) {
+        Log::warning('JetStream event data/payload is not an array - ACKed/TERMed', [
+            'stream'        => $streamName,
+            'consumer'      => $durable,
+            'msg_subject'   => $msgSubject,
+            'event_subject' => $evtSubject,
+            'event_id'      => $eventId,
+            'data_type'     => gettype($data),
+        ]);
+
+        $this->ackOrTermSafe($msg, $streamName, $durable, 'invalid_event_data');
+        return;
+    }
+
+    DB::beginTransaction();
+
+    try {
+        // Idempotency + attempts counter.
+        $inbox = InboxEvent::query()
+            ->where('event_id', $eventId)
+            ->lockForUpdate()
+            ->first();
+
+        if (!$inbox) {
+            InboxEvent::query()->create([
+                'event_id'   => $eventId,
+                'subject'    => $evtSubject,
+                'event_type' => $evtSubject,
+                'payload'    => $event,
+                'status'     => InboxEventStatus::Pending,
+                'attempts'   => 0,
+            ]);
+
             $inbox = InboxEvent::query()
                 ->where('event_id', $eventId)
                 ->lockForUpdate()
                 ->first();
+        }
 
-            if (!$inbox) {
-                InboxEvent::query()->create([
-                    'event_id'   => $eventId,
-                    'subject'    => $evtSubject,
-                    'event_type' => $evtSubject,
-                    'payload'    => $event,
-                    'status'     => InboxEventStatus::Pending,
-                    'attempts'   => 0,
-                ]);
+        if (!$inbox) {
+           throw new \RuntimeException('Inbox event row could not be created or reloaded.');
+        }
 
-                $inbox = InboxEvent::query()
-                    ->where('event_id', $eventId)
-                    ->lockForUpdate()
-                    ->first();
-            }
-
-            // If parked, never retry
-            if ($inbox && $inbox->status === InboxEventStatus::Parked) {
-                DB::commit();
-                $this->ackOrTermSafe($msg, $streamName, $durable, 'already_parked');
-
-                // Keep this warning (rare)
-                Log::warning('Event is parked - ACKed/TERMed and skipped', [
-                    'stream'       => $streamName,
-                    'consumer'     => $durable,
-                    'event_id'     => $eventId,
-                    'subject'      => $evtSubject,
-                    'attempts'     => (int) $inbox->attempts,
-                    'parked_since' => $inbox->failed_at?->toDateTimeString(),
-                ]);
-                return;
-            }
-
-            // If processed, ACK and exit
-            if ($inbox && $inbox->status === InboxEventStatus::Processed) {
-                DB::commit();
-                $this->ackOrTermSafe($msg, $streamName, $durable, 'already_processed');
-                return;
-            }
-
-            $handlerClass = $this->router->resolve($evtSubject);
-
-            /** @var EventHandlerInterface $handler */
-            $handler = app($handlerClass);
-            $handler->handle(is_array($data) ? $data : []);
-
-            $inbox->status       = InboxEventStatus::Processed;
-            $inbox->processed_at = now();
-            $inbox->failed_at    = null;
-            $inbox->last_error   = null;
-            $inbox->save();
-
+        // If parked, never retry.
+        if ($inbox->status === InboxEventStatus::Parked) {
             DB::commit();
-            $this->ackOrTermSafe($msg, $streamName, $durable, 'processed_ok');
-        } catch (Throwable $e) {
-            // On handler failure: increment attempts and decide retry vs park
-            try {
-                $locked = InboxEvent::query()
-                    ->where('event_id', $eventId)
-                    ->lockForUpdate()
-                    ->first();
 
-                if ($locked) {
-                    $locked->attempts   = (int) $locked->attempts + 1;
-                    $locked->last_error = $e->getMessage();
+            $this->ackOrTermSafe($msg, $streamName, $durable, 'already_parked');
 
-                    if ($locked->attempts >= self::MAX_PROCESSING_ATTEMPTS) {
-                        $locked->status    = InboxEventStatus::Parked;
-                        $locked->failed_at = now();
-                        $locked->save();
+            Log::warning('Event is parked - ACKed/TERMed and skipped', [
+                'stream'       => $streamName,
+                'consumer'     => $durable,
+                'event_id'     => $eventId,
+                'subject'      => $evtSubject,
+                'attempts'     => (int) $inbox->attempts,
+                'parked_since' => $inbox->failed_at?->toDateTimeString(),
+            ]);
 
-                        DB::commit();
-                        $this->ackOrTermSafe($msg, $streamName, $durable, 'parked_max_attempts');
-                        return;
-                    }
+            return;
+        }
 
+        // If already processed, ACK and exit.
+        if ($inbox->status === InboxEventStatus::Processed) {
+            DB::commit();
+
+            $this->ackOrTermSafe($msg, $streamName, $durable, 'already_processed');
+            return;
+        }
+
+        $handlerClass = $this->router->resolve($evtSubject);
+
+        /** @var EventHandlerInterface $handler */
+        $handler = app($handlerClass);
+        $handler->handle($data);
+
+        $inbox->status       = InboxEventStatus::Processed;
+        $inbox->processed_at = now();
+        $inbox->failed_at    = null;
+        $inbox->last_error   = null;
+        $inbox->save();
+
+        DB::commit();
+
+        $this->ackOrTermSafe($msg, $streamName, $durable, 'processed_ok');
+
+        Log::info('JetStream event processed successfully', [
+            'stream'        => $streamName,
+            'consumer'      => $durable,
+            'msg_subject'   => $msgSubject,
+            'event_subject' => $evtSubject,
+            'event_id'      => $eventId,
+            'handler'       => $handlerClass,
+        ]);
+    } catch (Throwable $e) {
+        try {
+            $locked = InboxEvent::query()
+                ->where('event_id', $eventId)
+                ->lockForUpdate()
+                ->first();
+
+            if ($locked) {
+                $locked->attempts   = (int) $locked->attempts + 1;
+                $locked->last_error = $e->getMessage();
+
+                if ($locked->attempts >= self::MAX_PROCESSING_ATTEMPTS) {
+                    $locked->status    = InboxEventStatus::Parked;
+                    $locked->failed_at = now();
                     $locked->save();
 
                     DB::commit();
-                    $this->nackWithDelaySafe($msg, $streamName, $durable, self::NACK_DELAY_SECONDS, 'handler_failed_retry');
+
+                    $this->ackOrTermSafe($msg, $streamName, $durable, 'parked_max_attempts');
+
+                    Log::error('JetStream event parked after max attempts', [
+                        'stream'        => $streamName,
+                        'consumer'      => $durable,
+                        'msg_subject'   => $msgSubject,
+                        'event_subject' => $evtSubject,
+                        'event_id'      => $eventId,
+                        'error'         => $e->getMessage(),
+                    ]);
+
                     return;
                 }
 
-                // If no locked row (shouldn't happen): rollback and retry
-                DB::rollBack();
-                $this->nackWithDelaySafe($msg, $streamName, $durable, self::NACK_DELAY_SECONDS, 'missing_inbox_row');
-            } catch (Throwable $inner) {
-                DB::rollBack();
-                $this->nackWithDelaySafe($msg, $streamName, $durable, self::NACK_DELAY_SECONDS, 'attempt_update_failed');
+                $locked->save();
 
-                Log::error('Event failed and attempts could not be updated - NACKed', [
-                    'stream'                => $streamName,
-                    'consumer'              => $durable,
-                    'event_id'              => $eventId,
-                    'subject'               => $evtSubject,
-                    'original_error'        => $e->getMessage(),
-                    'attempts_update_error' => $inner->getMessage(),
+                DB::commit();
+
+                $this->nackWithDelaySafe(
+                    $msg,
+                    $streamName,
+                    $durable,
+                    self::NACK_DELAY_SECONDS,
+                    'handler_failed_retry'
+                );
+
+                Log::warning('JetStream event failed - NACKed for retry', [
+                    'stream'        => $streamName,
+                    'consumer'      => $durable,
+                    'msg_subject'   => $msgSubject,
+                    'event_subject' => $evtSubject,
+                    'event_id'      => $eventId,
+                    'attempts'      => (int) $locked->attempts,
+                    'error'         => $e->getMessage(),
                 ]);
+
+                return;
             }
+
+            DB::rollBack();
+
+            $this->nackWithDelaySafe(
+                $msg,
+                $streamName,
+                $durable,
+                self::NACK_DELAY_SECONDS,
+                'missing_inbox_row'
+            );
+
+            Log::error('JetStream event failed but inbox row was missing - NACKed', [
+                'stream'        => $streamName,
+                'consumer'      => $durable,
+                'msg_subject'   => $msgSubject,
+                'event_subject' => $evtSubject,
+                'event_id'      => $eventId,
+                'error'         => $e->getMessage(),
+            ]);
+        } catch (Throwable $inner) {
+            DB::rollBack();
+
+            $this->nackWithDelaySafe(
+                $msg,
+                $streamName,
+                $durable,
+                self::NACK_DELAY_SECONDS,
+                'attempt_update_failed'
+            );
+
+            Log::error('JetStream event failed and attempts could not be updated - NACKed', [
+                'stream'                => $streamName,
+                'consumer'              => $durable,
+                'msg_subject'           => $msgSubject,
+                'event_subject'         => $evtSubject,
+                'event_id'              => $eventId,
+                'original_error'        => $e->getMessage(),
+                'attempts_update_error' => $inner->getMessage(),
+            ]);
         }
     }
+}
+
+
 
     private function isJetStreamDelivery(?string $reply): bool
     {

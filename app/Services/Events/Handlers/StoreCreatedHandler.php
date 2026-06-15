@@ -25,46 +25,41 @@ class StoreCreatedHandler implements EventHandlerInterface
      *   external id is used as the local primary key.
      * - franchise_accounts rows are never created from this event.
      */
-    public function handle(array $data): void
-    {
-        $id                 = $data['id'] ?? null;
-        $storeName          = $data['store_name'] ?? null;
-        // $franchiseAccountId = $data['franchise_account_id'] ?? null;
+public function handle(array $data): void
+{
+    $storePayload = isset($data['store']) && is_array($data['store'])
+        ? $data['store']
+        : $data;
 
-        if ($id === null || $storeName === null) {
+    $id = $storePayload['id'] ?? $data['store_id'] ?? null;
+
+    $storeName = $storePayload['store_name']
+        ?? $storePayload['name']
+        ?? $data['store_name']
+        ?? $data['name']
+        ?? null;
+
+    if ($id === null || $storeName === null) {
+        return;
+    }
+
+    DB::transaction(function () use ($id, $storeName): void {
+        $store = Store::find($id);
+
+        if ($store !== null) {
+            $store->update([
+                'store_name' => $storeName,
+                'status' => StoreStatus::Active,
+            ]);
+
             return;
         }
 
-        // if ($franchiseAccountId === null) {
-        //     throw new RuntimeException(
-        //         'auth.v1.store.created is missing franchise_account_id; cannot create local store.'
-        //     );
-        // }
-
-        DB::transaction(function () use ($id, $storeName): void {
-            // $franchise = FranchiseAccount::find($franchiseAccountId);
-
-            // if ($franchise === null) {
-            //     throw new RuntimeException(
-            //         "franchise_account_id {$franchiseAccountId} does not exist locally. " .
-            //         'Retry after the franchise is synchronized.'
-            //     );
-            // }
-
-            $store = Store::find($id);
-
-            if ($store !== null) {
-                // Reactivate if previously deactivated; always keep store_name current.
-                $store->update(['store_name' => $storeName, 'status' => StoreStatus::Active]);
-                return;
-            }
-
-            Store::forceCreate([
-                'id'                   => $id,
-                // 'franchise_account_id' => $franchiseAccountId,
-                'store_name'           => $storeName,
-                'status'               => StoreStatus::Active,
-            ]);
-        });
-    }
+        Store::forceCreate([
+            'id' => $id,
+            'store_name' => $storeName,
+            'status' => StoreStatus::Active,
+        ]);
+    });
+}
 }
