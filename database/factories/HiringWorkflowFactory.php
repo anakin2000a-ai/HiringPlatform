@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\WorkflowStatus;
 use App\Models\HiringWorkflow;
 use App\Models\Store;
 use App\Models\User;
@@ -20,7 +21,7 @@ class HiringWorkflowFactory extends Factory
             'store_id' => Store::factory(),
             'name' => $this->faker->unique()->words(3, true) . ' Workflow',
             'version' => 1,
-            'status' => 'draft',
+            'status' => WorkflowStatus::Draft,
             'parent_workflow_id' => null,
             'created_by' => null,
             'published_at' => null,
@@ -31,7 +32,7 @@ class HiringWorkflowFactory extends Factory
     public function active(): static
     {
         return $this->state([
-            'status' => 'active',
+            'status'       => WorkflowStatus::Active,
             'published_at' => now(),
         ]);
     }
@@ -39,9 +40,9 @@ class HiringWorkflowFactory extends Factory
     public function archived(): static
     {
         return $this->state([
-            'status' => 'archived',
+            'status'       => WorkflowStatus::Archived,
             'published_at' => now()->subDay(),
-            'archived_at' => now(),
+            'archived_at'  => now(),
         ]);
     }
 

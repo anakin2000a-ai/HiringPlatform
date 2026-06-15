@@ -2,6 +2,10 @@
 
 namespace App\Services\Documents;
 
+use App\Enums\ActorType;
+use App\Enums\DocumentStatus;
+use App\Enums\OutboxEventStatus;
+use App\Enums\WorkflowEventType;
 use App\Models\Application;
 use App\Models\ApplicantDocument;
 use App\Models\OutboxEvent;
@@ -28,13 +32,13 @@ class ApplicantDocumentService
             'workflow_stage_id'            => $requirement->workflow_stage_id,
             'stage_document_requirement_id' => $requirement->id,
             'document_template_id'         => $requirement->document_template_id,
-            'status'                       => 'pending',
+            'status'                       => DocumentStatus::Pending,
         ]);
     }
 
    public function submit(ApplicantDocument $document, User $actor, UploadedFile $file): ApplicantDocument
 {
-    if (! in_array($document->status, ['pending', 'rejected'], true)) {
+    if (! in_array($document->status, [DocumentStatus::Pending, DocumentStatus::Rejected], true)) {
         throw ValidationException::withMessages([
             'status' => ['Only pending or rejected documents can be submitted.'],
         ]);
@@ -44,7 +48,7 @@ class ApplicantDocumentService
         $path = $file->store("applicant-documents/{$document->application_id}", 'public');
 
         $document->update([
-            'status'       => 'submitted',
+            'status'       => DocumentStatus::Submitted,
             'file_path'    => $path,
             'submitted_at' => now(),
         ]);
@@ -54,14 +58,14 @@ class ApplicantDocumentService
         $this->activityService->record(
             applicationId:  $document->application_id,
             storeId:        $storeId,
-            eventType:      'applicant_document_submitted',
+            eventType:      WorkflowEventType::ApplicantDocumentSubmitted,
             workflowStageId: $document->workflow_stage_id,
-            actorType:      'user',
+            actorType:      ActorType::User,
             actorId:        $actor->id,
             newValue: [
                 'document_id' => $document->id,
-                'status' => 'submitted',
-                'file_path' => $path,
+                'status'      => DocumentStatus::Submitted->value,
+                'file_path'   => $path,
             ],
         );
 
@@ -75,7 +79,7 @@ class ApplicantDocumentService
                 'submitted_by'   => $actor->id,
                 'file_path'      => $path,
             ],
-            'status'   => 'pending',
+            'status'   => OutboxEventStatus::Pending,
             'attempts' => 0,
         ]);
 
@@ -89,7 +93,7 @@ class ApplicantDocumentService
 
     public function sign(ApplicantDocument $document, ?string $externalSignatureId, User $actor): ApplicantDocument
     {
-        if ($document->status !== 'submitted') {
+        if ($document->status !== DocumentStatus::Submitted) {
             throw ValidationException::withMessages([
                 'status' => ['Only submitted documents can be signed.'],
             ]);
@@ -105,7 +109,7 @@ class ApplicantDocumentService
 
         $result = DB::transaction(function () use ($document, $externalSignatureId, $actor): ApplicantDocument {
             $document->update([
-                'status'                => 'signed',
+                'status'                => DocumentStatus::Signed,
                 'signed_at'             => now(),
                 'external_signature_id' => $externalSignatureId,
             ]);
@@ -115,11 +119,11 @@ class ApplicantDocumentService
             $this->activityService->record(
                 applicationId:  $document->application_id,
                 storeId:        $storeId,
-                eventType:      'applicant_document_signed',
+                eventType:      WorkflowEventType::ApplicantDocumentSigned,
                 workflowStageId: $document->workflow_stage_id,
-                actorType:      'user',
+                actorType:      ActorType::User,
                 actorId:        $actor->id,
-                newValue:       ['document_id' => $document->id, 'status' => 'signed'],
+                newValue:       ['document_id' => $document->id, 'status' => DocumentStatus::Signed->value],
             );
 
             OutboxEvent::create([
@@ -131,7 +135,7 @@ class ApplicantDocumentService
                     'application_id' => $document->application_id,
                     'signed_by'      => $actor->id,
                 ],
-                'status'   => 'pending',
+                'status'   => OutboxEventStatus::Pending,
                 'attempts' => 0,
             ]);
 
@@ -147,7 +151,9 @@ class ApplicantDocumentService
     {
         $template = $document->documentTemplate ?? $document->load('documentTemplate')->documentTemplate;
 
-        $allowedStatuses = $template->requires_signature ? ['signed'] : ['submitted', 'signed'];
+        $allowedStatuses = $template->requires_signature
+            ? [DocumentStatus::Signed]
+            : [DocumentStatus::Submitted, DocumentStatus::Signed];
 
         if (! in_array($document->status, $allowedStatuses, true)) {
             throw ValidationException::withMessages([
@@ -157,7 +163,7 @@ class ApplicantDocumentService
 
         $result = DB::transaction(function () use ($document, $actor): ApplicantDocument {
             $document->update([
-                'status'      => 'approved',
+                'status'      => DocumentStatus::Approved,
                 'approved_by' => $actor->id,
                 'approved_at' => now(),
             ]);
@@ -167,11 +173,11 @@ class ApplicantDocumentService
             $this->activityService->record(
                 applicationId:  $document->application_id,
                 storeId:        $storeId,
-                eventType:      'applicant_document_approved',
+                eventType:      WorkflowEventType::ApplicantDocumentApproved,
                 workflowStageId: $document->workflow_stage_id,
-                actorType:      'user',
+                actorType:      ActorType::User,
                 actorId:        $actor->id,
-                newValue:       ['document_id' => $document->id, 'status' => 'approved'],
+                newValue:       ['document_id' => $document->id, 'status' => DocumentStatus::Approved->value],
             );
 
             OutboxEvent::create([
@@ -183,7 +189,7 @@ class ApplicantDocumentService
                     'application_id' => $document->application_id,
                     'approved_by'    => $actor->id,
                 ],
-                'status'   => 'pending',
+                'status'   => OutboxEventStatus::Pending,
                 'attempts' => 0,
             ]);
 
@@ -197,7 +203,7 @@ class ApplicantDocumentService
 
     public function reject(ApplicantDocument $document, string $reason, User $actor): ApplicantDocument
     {
-        if ($document->status === 'approved') {
+        if ($document->status === DocumentStatus::Approved) {
             throw ValidationException::withMessages([
                 'status' => ['Approved documents cannot be rejected.'],
             ]);
@@ -205,7 +211,7 @@ class ApplicantDocumentService
 
         $result = DB::transaction(function () use ($document, $reason, $actor): ApplicantDocument {
             $document->update([
-                'status'          => 'rejected',
+                'status'          => DocumentStatus::Rejected,
                 'rejected_at'     => now(),
                 'rejected_reason' => $reason,
             ]);
@@ -215,11 +221,11 @@ class ApplicantDocumentService
             $this->activityService->record(
                 applicationId:  $document->application_id,
                 storeId:        $storeId,
-                eventType:      'applicant_document_rejected',
+                eventType:      WorkflowEventType::ApplicantDocumentRejected,
                 workflowStageId: $document->workflow_stage_id,
-                actorType:      'user',
+                actorType:      ActorType::User,
                 actorId:        $actor->id,
-                newValue:       ['document_id' => $document->id, 'status' => 'rejected', 'reason' => $reason],
+                newValue:       ['document_id' => $document->id, 'status' => DocumentStatus::Rejected->value, 'reason' => $reason],
             );
 
             OutboxEvent::create([
@@ -232,7 +238,7 @@ class ApplicantDocumentService
                     'rejected_by'    => $actor->id,
                     'reason'         => $reason,
                 ],
-                'status'   => 'pending',
+                'status'   => OutboxEventStatus::Pending,
                 'attempts' => 0,
             ]);
 

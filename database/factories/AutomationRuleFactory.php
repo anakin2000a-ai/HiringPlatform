@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\AutomationTrigger;
 use App\Models\AutomationRule;
 use App\Models\Store;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -20,7 +21,7 @@ class AutomationRuleFactory extends Factory
             'hiring_workflow_id' => null,
             'workflow_stage_id'  => null,
             'name'               => $this->faker->unique()->words(3, true) . ' Rule',
-            'trigger'            => 'application_created',
+            'trigger'            => AutomationTrigger::ApplicationCreated,
             'conditions'         => null,
             'actions'            => [['type' => 'create_activity', 'event_type' => 'automation_fired']],
             'priority'           => 100,

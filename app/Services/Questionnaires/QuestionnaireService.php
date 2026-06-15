@@ -4,6 +4,7 @@ namespace App\Services\Questionnaires;
 
 use App\Models\QuestionnaireQuestion;
 use App\Models\QuestionnaireTemplate;
+use App\Models\StageQuestionnaireAssignment;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -40,7 +41,9 @@ class QuestionnaireService
             }
         }
 
-        return DB::transaction(function () use ($store, $data, $creator, $version, $questions) {
+        $stageAssignment = $data['stage_assignment'] ?? null;
+
+        return DB::transaction(function () use ($store, $data, $creator, $version, $questions, $stageAssignment) {
             $questionnaire = QuestionnaireTemplate::create([
                 'store_id'   => $store->id,
                 'name'       => $data['name'],
@@ -60,9 +63,32 @@ class QuestionnaireService
                 ]);
             }
 
-            return $questions
-                ? $questionnaire->load('questions')
-                : $questionnaire;
+            if ($stageAssignment) {
+                $stageId = (int) $stageAssignment['workflow_stage_id'];
+
+                $alreadyAssigned = StageQuestionnaireAssignment::where('workflow_stage_id', $stageId)
+                    ->where('questionnaire_template_id', $questionnaire->id)
+                    ->exists();
+
+                if ($alreadyAssigned) {
+                    throw ValidationException::withMessages([
+                        'stage_assignment.workflow_stage_id' => ['This questionnaire is already assigned to this stage.'],
+                    ]);
+                }
+
+                StageQuestionnaireAssignment::create([
+                    'workflow_stage_id'         => $stageId,
+                    'questionnaire_template_id' => $questionnaire->id,
+                    'is_required'               => $stageAssignment['is_required'] ?? true,
+                ]);
+            }
+
+            $relations = ['questions'];
+            if ($stageAssignment) {
+                $relations[] = 'stageAssignments';
+            }
+
+            return $questionnaire->load($relations);
         });
     }
 

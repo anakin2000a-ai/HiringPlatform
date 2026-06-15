@@ -243,7 +243,7 @@ class AssignmentEventTest extends TestCase
             ])
         );
 
-        $this->assertSame('processed', $result->status);
+        $this->assertSame('processed', $result->status instanceof \BackedEnum ? $result->status->value : $result->status);
         $this->assertDatabaseCount('user_store_access', 0);
     }
 
@@ -287,7 +287,7 @@ class AssignmentEventTest extends TestCase
             ])
         );
 
-        $this->assertSame('processed', $result->status);
+        $this->assertSame('processed', $result->status instanceof \BackedEnum ? $result->status->value : $result->status);
         $this->assertDatabaseCount('user_store_access', 0);
     }
 
@@ -330,7 +330,7 @@ class AssignmentEventTest extends TestCase
             ])
         );
 
-        $this->assertSame('processed', $result->status);
+        $this->assertSame('processed', $result->status instanceof \BackedEnum ? $result->status->value : $result->status);
         $this->assertSame(1, UserStoreAccess::where('user_id', $user->id)
             ->where('store_id', $store->id)
             ->count());

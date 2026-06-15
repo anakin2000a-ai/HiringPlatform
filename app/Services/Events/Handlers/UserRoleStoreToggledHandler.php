@@ -2,6 +2,7 @@
 
 namespace App\Services\Events\Handlers;
 
+use App\Enums\UserStatus;
 use App\Models\Store;
 use App\Models\User;
 use App\Models\UserStoreAccess;
@@ -80,7 +81,7 @@ class UserRoleStoreToggledHandler implements EventHandlerInterface
                     'store_id'     => $storeId,
                     'role'         => $role,
                     'access_scope' => $scope,
-                    'status'       => 'active',
+                    'status'       => UserStatus::Active,
                 ]);
             } else {
                 if (! $exists) {

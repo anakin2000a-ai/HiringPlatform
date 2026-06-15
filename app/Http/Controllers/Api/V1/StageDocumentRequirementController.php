@@ -21,59 +21,9 @@ class StageDocumentRequirementController extends Controller
         private readonly StoreAccessService $storeAccessService,
     ) {}
 
-    public function index(Request $request, WorkflowStage $stage): JsonResponse
-    {
-        $stage->load('workflow');
-        $store = $stage->workflow->store;
+ 
 
-        if (! $this->storeAccessService->canAccessStore($request->user(), $store)) {
-            return ApiResponse::forbidden();
-        }
-
-        $request->validate([
-            'per_page'             => ['sometimes', 'integer', 'min:1', 'max:100'],
-            'is_required'          => ['sometimes', 'boolean'],
-            'document_template_id' => ['sometimes', 'integer'],
-        ]);
-
-        $query = StageDocumentRequirement::where('workflow_stage_id', $stage->id)
-            ->with('documentTemplate');
-
-        if ($request->has('is_required')) {
-            $query->where('is_required', $request->boolean('is_required'));
-        }
-        if ($request->filled('document_template_id')) {
-            $query->where('document_template_id', $request->integer('document_template_id'));
-        }
-
-        $requirements = $query->orderBy('id')
-            ->paginate($request->integer('per_page', 20));
-
-        return ApiResponse::success(
-            StageDocumentRequirementResource::collection($requirements)->response()->getData(true)
-        );
-    }
-
-    public function store(CreateStageDocumentRequirementRequest $request, WorkflowStage $stage): JsonResponse
-    {
-        $stage->load('workflow');
-        $store = $stage->workflow->store;
-
-        if (! $this->storeAccessService->canAccessStore($request->user(), $store)) {
-            return ApiResponse::forbidden();
-        }
-
-        if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('You do not have access to this store.');
-        }
-
-        $requirement = $this->requirementService->create($stage, $request->validated());
-
-        return ApiResponse::created(
-            new StageDocumentRequirementResource($requirement->load('documentTemplate')),
-            'Stage document requirement created'
-        );
-    }
+ 
 
     public function show(Request $request, StageDocumentRequirement $requirement): JsonResponse
     {

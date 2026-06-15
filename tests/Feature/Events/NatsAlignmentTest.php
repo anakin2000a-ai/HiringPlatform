@@ -13,6 +13,7 @@ use App\Models\Store;
 use App\Models\User;
 use App\Models\WorkflowStage;
 use App\Models\WorkflowStageTransition;
+use App\Enums\TransitionType;
 use App\Services\Applications\ApplicationStageService;
 use App\Services\Events\InboxEventProcessor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -140,7 +141,7 @@ class NatsAlignmentTest extends TestCase
             $this->envelope('auth.v1.user.updated', ['id' => 999999, 'name' => 'Ghost'])
         );
 
-        $this->assertSame('processed', $result->status);
+        $this->assertSame('processed', $result->status instanceof \BackedEnum ? $result->status->value : $result->status);
         $this->assertDatabaseCount('users', 0);
     }
 
@@ -175,7 +176,7 @@ class NatsAlignmentTest extends TestCase
             $this->envelope('auth.v1.store.updated', ['id' => 999999, 'store_name' => 'Ghost'])
         );
 
-        $this->assertSame('processed', $result->status);
+        $this->assertSame('processed', $result->status instanceof \BackedEnum ? $result->status->value : $result->status);
         $this->assertDatabaseCount('stores', 0);
     }
 
@@ -202,13 +203,13 @@ class NatsAlignmentTest extends TestCase
         [, $admin, , $hired, , $application] = $this->makeTerminalSetup();
 
         $service = $this->app->make(ApplicationStageService::class);
-        $service->move($application, $hired->id, null, $admin, 'manual');
+        $service->move($application, $hired->id, null, $admin, TransitionType::Manual);
 
         $event = OutboxEvent::where('event_type', 'hiring.v1.application.hired')->first();
 
         $this->assertNotNull($event);
         $this->assertSame('hiring.v1.application.hired', $event->subject);
-        $this->assertSame('pending', $event->status);
+        $this->assertSame('pending', $event->status instanceof \BackedEnum ? $event->status->value : $event->status);
         $this->assertSame('1.0', $event->payload['specversion']);
         $this->assertSame('hiring-platform', $event->payload['source']);
         $this->assertSame('hired', $event->payload['data']['status']);
@@ -225,13 +226,13 @@ class NatsAlignmentTest extends TestCase
         [, $admin, , , $rejected, $application] = $this->makeTerminalSetup();
 
         $service = $this->app->make(ApplicationStageService::class);
-        $service->move($application, $rejected->id, null, $admin, 'manual');
+        $service->move($application, $rejected->id, null, $admin, TransitionType::Manual);
 
         $event = OutboxEvent::where('event_type', 'hiring.v1.application.rejected')->first();
 
         $this->assertNotNull($event);
         $this->assertSame('hiring.v1.application.rejected', $event->subject);
-        $this->assertSame('pending', $event->status);
+        $this->assertSame('pending', $event->status instanceof \BackedEnum ? $event->status->value : $event->status);
         $this->assertSame('rejected', $event->payload['data']['status']);
         $this->assertSame($application->id, $event->payload['data']['application_id']);
     }
@@ -245,7 +246,7 @@ class NatsAlignmentTest extends TestCase
         [, $admin, , $hired, , $application] = $this->makeTerminalSetup();
 
         $service = $this->app->make(ApplicationStageService::class);
-        $service->move($application, $hired->id, null, $admin, 'manual');
+        $service->move($application, $hired->id, null, $admin, TransitionType::Manual);
 
         $this->assertDatabaseHas('outbox_events', [
             'event_type' => 'hiring.application.stage_changed',
@@ -258,7 +259,7 @@ class NatsAlignmentTest extends TestCase
         [, $admin, , $hired, , $application] = $this->makeTerminalSetup();
 
         $service = $this->app->make(ApplicationStageService::class);
-        $service->move($application, $hired->id, null, $admin, 'manual');
+        $service->move($application, $hired->id, null, $admin, TransitionType::Manual);
 
         $this->assertSame(2, OutboxEvent::whereIn('event_type', [
             'hiring.application.stage_changed',

@@ -191,7 +191,7 @@ class StoreAccessTest extends TestCase
         UserStoreAccess::create([
             'user_id'      => $user->id,
             'store_id'     => $store->id,
-            'role'         => '',
+            'role'         => 'viewer', // role value is irrelevant to access check; any valid role
             'access_scope' => 'store',
             'status'       => 'active',
         ]);

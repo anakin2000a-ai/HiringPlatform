@@ -497,15 +497,15 @@ class IndexFilterTest extends TestCase
         [$franchise, $store, $admin] = $this->makeAdminStore();
         $workflow = HiringWorkflow::factory()->forStore($store)->create();
 
-        WorkflowStage::factory()->forWorkflow($workflow)->create(['stage_type' => 'standard', 'position' => 1, 'is_initial' => true]);
-        WorkflowStage::factory()->forWorkflow($workflow)->create(['stage_type' => 'review', 'position' => 2]);
+        WorkflowStage::factory()->forWorkflow($workflow)->create(['stage_type' => 'application', 'position' => 1, 'is_initial' => true]);
+        WorkflowStage::factory()->forWorkflow($workflow)->create(['stage_type' => 'screening', 'position' => 2]);
 
         $response = $this->actingAs($admin)
-            ->getJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}/stages?stage_type=review");
+            ->getJson("/api/v1/stores/{$store->store_name}/workflows/{$workflow->id}/stages?stage_type=screening");
 
         $response->assertOk();
         $this->assertCount(1, $response->json('data.data'));
-        $this->assertEquals('review', $response->json('data.data.0.stage_type'));
+        $this->assertEquals('screening', $response->json('data.data.0.stage_type'));
     }
 
     public function test_workflow_stages_can_filter_by_is_initial(): void

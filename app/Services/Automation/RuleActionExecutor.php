@@ -2,6 +2,11 @@
 
 namespace App\Services\Automation;
 
+use App\Enums\ActorType;
+use App\Enums\OutboxEventStatus;
+use App\Enums\StageType;
+use App\Enums\TransitionType;
+use App\Enums\WorkflowEventType;
 use App\Models\Application;
 use App\Models\OutboxEvent;
 use App\Services\Applications\ApplicationStageService;
@@ -84,7 +89,7 @@ class RuleActionExecutor
                 $targetStage->id,
                 $action['reason'] ?? null,
                 null,
-                'automatic',
+                TransitionType::Automatic,
             );
 
             $engine->evaluate('stage_entered', $updated, $executedRuleIds, $depth + 1);
@@ -102,7 +107,7 @@ class RuleActionExecutor
     ): void {
         $application->loadMissing(['jobOpening.hiringWorkflow.stages']);
         $stages        = $application->jobOpening->hiringWorkflow->stages;
-        $rejectedStage = $stages->first(fn ($s) => $s->is_terminal && $s->stage_type === 'rejected');
+        $rejectedStage = $stages->first(fn ($s) => $s->is_terminal && $s->stage_type === StageType::Rejected);
 
         if ($rejectedStage === null) {
             $this->logFailedAction($application, $action, 'No rejected terminal stage found in workflow.');
@@ -115,7 +120,7 @@ class RuleActionExecutor
                 $rejectedStage->id,
                 $action['reason'] ?? 'Rejected by automation rule.',
                 null,
-                'automatic',
+                TransitionType::Automatic,
             );
 
             $engine->evaluate('stage_entered', $updated, $executedRuleIds, $depth + 1);
@@ -133,7 +138,7 @@ class RuleActionExecutor
     ): void {
         $application->loadMissing(['jobOpening.hiringWorkflow.stages']);
         $stages     = $application->jobOpening->hiringWorkflow->stages;
-        $hiredStage = $stages->first(fn ($s) => $s->is_terminal && $s->stage_type === 'hired');
+        $hiredStage = $stages->first(fn ($s) => $s->is_terminal && $s->stage_type === StageType::Hired);
 
         if ($hiredStage === null) {
             $this->logFailedAction($application, $action, 'No hired terminal stage found in workflow.');
@@ -146,7 +151,7 @@ class RuleActionExecutor
                 $hiredStage->id,
                 $action['reason'] ?? 'Marked hired by automation rule.',
                 null,
-                'automatic',
+                TransitionType::Automatic,
             );
 
             $engine->evaluate('stage_entered', $updated, $executedRuleIds, $depth + 1);
@@ -162,9 +167,9 @@ class RuleActionExecutor
         $this->activityService->record(
             applicationId:   $application->id,
             storeId:         $application->jobOpening->store_id,
-            eventType:       $action['event_type'] ?? 'automation_activity',
+            eventType:       $action['event_type'] ?? WorkflowEventType::AutomationActivity->value,
             workflowStageId: $application->current_stage_id,
-            actorType:       'automation',
+            actorType:       ActorType::Automation,
             actorId:         null,
             metadata:        $action['metadata'] ?? null,
         );
@@ -182,7 +187,7 @@ class RuleActionExecutor
                 ['application_id' => $application->id],
                 $action['payload'] ?? [],
             ),
-            'status'   => 'pending',
+            'status'   => OutboxEventStatus::Pending,
             'attempts' => 0,
         ]);
     }
@@ -202,9 +207,9 @@ class RuleActionExecutor
             $this->activityService->record(
                 applicationId:   $application->id,
                 storeId:         $application->jobOpening->store_id,
-                eventType:       'score_set',
+                eventType:       WorkflowEventType::ScoreSet,
                 workflowStageId: $application->current_stage_id,
-                actorType:       'automation',
+                actorType:       ActorType::Automation,
                 actorId:         null,
                 newValue:        ['score' => $application->score],
                 metadata:        $action['metadata'] ?? null,
@@ -229,9 +234,9 @@ class RuleActionExecutor
             $this->activityService->record(
                 applicationId:   $application->id,
                 storeId:         $application->jobOpening->store_id,
-                eventType:       'score_incremented',
+                eventType:       WorkflowEventType::ScoreIncremented,
                 workflowStageId: $application->current_stage_id,
-                actorType:       'automation',
+                actorType:       ActorType::Automation,
                 actorId:         null,
                 newValue:        ['score' => $application->score, 'incremented_by' => $by],
                 metadata:        $action['metadata'] ?? null,
@@ -246,9 +251,9 @@ class RuleActionExecutor
         $this->activityService->record(
             applicationId:   $application->id,
             storeId:         $application->jobOpening->store_id,
-            eventType:       'automation_action_failed',
+            eventType:       WorkflowEventType::AutomationActionFailed,
             workflowStageId: $application->current_stage_id,
-            actorType:       'automation',
+            actorType:       ActorType::Automation,
             actorId:         null,
             metadata:        ['action' => $action, 'reason' => $reason],
         );

@@ -52,7 +52,7 @@ class InboxEventProcessorTest extends TestCase
 
         $result = $this->processor()->process('stores.store.updated', $envelope);
 
-        $this->assertSame('processed', $result->status);
+        $this->assertSame('processed', $result->status instanceof \BackedEnum ? $result->status->value : $result->status);
         $this->assertNotNull($result->processed_at);
         $this->assertDatabaseHas('inbox_events', [
             'event_id' => $envelope['event_id'],
@@ -68,7 +68,7 @@ class InboxEventProcessorTest extends TestCase
         $result2 = $this->processor()->process('stores.store.updated', $envelope);
 
         $this->assertSame(1, InboxEvent::where('event_id', $envelope['event_id'])->count());
-        $this->assertSame('processed', $result2->status);
+        $this->assertSame('processed', $result2->status instanceof \BackedEnum ? $result2->status->value : $result2->status);
     }
 
     public function test_missing_event_id_throws_invalid_argument_exception(): void
@@ -109,7 +109,7 @@ class InboxEventProcessorTest extends TestCase
 
         $result = $this->processor()->process('stores.store.updated', $envelope);
 
-        $this->assertSame('processed', $result->status);
+        $this->assertSame('processed', $result->status instanceof \BackedEnum ? $result->status->value : $result->status);
     }
 
     public function test_applicant_updated_updates_local_applicant_when_found(): void
@@ -138,7 +138,7 @@ class InboxEventProcessorTest extends TestCase
 
         $result = $this->processor()->process('unknown.thing.happened', $envelope);
 
-        $this->assertSame('processed', $result->status);
+        $this->assertSame('processed', $result->status instanceof \BackedEnum ? $result->status->value : $result->status);
         $this->assertDatabaseHas('inbox_events', [
             'event_id' => $envelope['event_id'],
             'status'   => 'processed',
@@ -154,7 +154,7 @@ class InboxEventProcessorTest extends TestCase
 
         $result = $this->processor()->process('employees.employee.created', $envelope);
 
-        $this->assertSame('processed', $result->status);
+        $this->assertSame('processed', $result->status instanceof \BackedEnum ? $result->status->value : $result->status);
     }
 
     // -----------------------------------------------------------------------

@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Questionnaires;
 
+use App\Enums\QuestionType;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateQuestionnaireQuestionRequest extends FormRequest
 {
@@ -11,7 +13,7 @@ class UpdateQuestionnaireQuestionRequest extends FormRequest
         return [
             'question_key'     => ['sometimes', 'string', 'max:150'],
             'label'            => ['sometimes', 'string'],
-            'type'             => ['sometimes', 'string', 'in:text,number,boolean,date,select,multiselect'],
+            'type'             => ['sometimes', 'string', Rule::enum(QuestionType::class)],
             'options'          => ['nullable', 'array'],
             'validation_rules' => ['nullable', 'array'],
             'visibility_rules' => ['nullable', 'array'],

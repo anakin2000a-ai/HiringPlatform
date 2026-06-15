@@ -2,6 +2,7 @@
 
 namespace App\Services\Nats;
 
+use App\Enums\InboxEventStatus;
 use App\Models\InboxEvent;
 use App\Services\Events\EventHandlerInterface;
 use App\Services\Events\EventRouter;
@@ -305,7 +306,7 @@ class JetStreamConsumer
                     'subject'    => $evtSubject,
                     'event_type' => $evtSubject,
                     'payload'    => $event,
-                    'status'     => 'pending',
+                    'status'     => InboxEventStatus::Pending,
                     'attempts'   => 0,
                 ]);
 
@@ -316,7 +317,7 @@ class JetStreamConsumer
             }
 
             // If parked, never retry
-            if ($inbox && $inbox->status === 'parked') {
+            if ($inbox && $inbox->status === InboxEventStatus::Parked) {
                 DB::commit();
                 $this->ackOrTermSafe($msg, $streamName, $durable, 'already_parked');
 
@@ -333,7 +334,7 @@ class JetStreamConsumer
             }
 
             // If processed, ACK and exit
-            if ($inbox && $inbox->status === 'processed') {
+            if ($inbox && $inbox->status === InboxEventStatus::Processed) {
                 DB::commit();
                 $this->ackOrTermSafe($msg, $streamName, $durable, 'already_processed');
                 return;
@@ -345,7 +346,7 @@ class JetStreamConsumer
             $handler = app($handlerClass);
             $handler->handle(is_array($data) ? $data : []);
 
-            $inbox->status       = 'processed';
+            $inbox->status       = InboxEventStatus::Processed;
             $inbox->processed_at = now();
             $inbox->failed_at    = null;
             $inbox->last_error   = null;
@@ -366,7 +367,7 @@ class JetStreamConsumer
                     $locked->last_error = $e->getMessage();
 
                     if ($locked->attempts >= self::MAX_PROCESSING_ATTEMPTS) {
-                        $locked->status    = 'parked';
+                        $locked->status    = InboxEventStatus::Parked;
                         $locked->failed_at = now();
                         $locked->save();
 

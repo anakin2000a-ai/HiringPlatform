@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ApplicationStatus;
 use Database\Factories\ApplicationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -27,10 +28,11 @@ class Application extends Model
     protected function casts(): array
     {
         return [
-            'applied_at' => 'datetime',
-            'rejected_at' => 'datetime',
-            'hired_at' => 'datetime',
-            'withdrawn_at' => 'datetime',
+            'applied_at'    => 'datetime',
+            'rejected_at'   => 'datetime',
+            'hired_at'      => 'datetime',
+            'withdrawn_at'  => 'datetime',
+            'status'        => ApplicationStatus::class,
         ];
     }
 

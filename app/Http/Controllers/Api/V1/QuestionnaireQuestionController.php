@@ -21,43 +21,7 @@ class QuestionnaireQuestionController extends Controller
         private readonly QuestionnaireQuestionService $questionService,
         private readonly StoreAccessService $storeAccessService,
     ) {}
-
-    public function index(Request $request, Store $store, QuestionnaireTemplate $questionnaire): JsonResponse
-    {
-        if (! $this->questionnaireBelongsToStore($questionnaire, $store)) {
-            return ApiResponse::notFound('Questionnaire not found');
-        }
-
-        $request->validate([
-            'per_page'    => ['sometimes', 'integer', 'min:1', 'max:100'],
-            'type'        => ['sometimes', 'string'],
-            'is_required' => ['sometimes', 'boolean'],
-            'search'      => ['sometimes', 'string', 'max:255'],
-        ]);
-
-        $query = $questionnaire->questions();
-
-        if ($request->filled('type')) {
-            $query->where('type', $request->input('type'));
-        }
-        if ($request->has('is_required')) {
-            $query->where('is_required', $request->boolean('is_required'));
-        }
-        if ($request->filled('search')) {
-            $term = '%' . $request->input('search') . '%';
-            $query->where(fn ($q) => $q
-                ->where('label', 'like', $term)
-                ->orWhere('question_key', 'like', $term)
-            );
-        }
-
-        $questions = $query->orderBy('position')->orderBy('id')
-            ->paginate($request->integer('per_page', 20));
-
-        return ApiResponse::success(
-            QuestionnaireQuestionResource::collection($questions)->response()->getData(true)
-        );
-    }
+ 
 
     public function store(CreateQuestionnaireQuestionRequest $request, Store $store, QuestionnaireTemplate $questionnaire): JsonResponse
     {

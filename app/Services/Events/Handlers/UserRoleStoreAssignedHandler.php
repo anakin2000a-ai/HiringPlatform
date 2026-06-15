@@ -2,6 +2,7 @@
 
 namespace App\Services\Events\Handlers;
 
+use App\Enums\UserStatus;
 use App\Models\Store;
 use App\Models\User;
 use App\Models\UserStoreAccess;
@@ -44,7 +45,7 @@ class UserRoleStoreAssignedHandler implements EventHandlerInterface
 
         $role  = (isset($assignment['role']) && in_array($assignment['role'], self::ALLOWED_ROLES, true))
             ? $assignment['role']
-            : 'viewer';
+            : 'store_manager';
         $scope = (isset($assignment['access_scope']) && in_array($assignment['access_scope'], ['franchise', 'store'], true))
             ? $assignment['access_scope']
             : 'store';
@@ -52,7 +53,7 @@ class UserRoleStoreAssignedHandler implements EventHandlerInterface
         DB::transaction(static function () use ($userId, $storeId, $role, $scope): void {
             UserStoreAccess::firstOrCreate(
                 ['user_id' => (int) $userId, 'store_id' => (int) $storeId],
-                ['role' => $role, 'access_scope' => $scope, 'status' => 'active']
+                ['role' => $role, 'access_scope' => $scope, 'status' => UserStatus::Active]
             );
         });
     }

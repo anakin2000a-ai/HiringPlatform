@@ -140,7 +140,7 @@
           "maximum": 100,
           "default": 20
         },
-        "description": "Number of items per page. Must be 1–100."
+        "description": "Number of items per page. Must be 1\u00e2\u20ac\u201c100."
       }
     },
     "schemas": {
@@ -670,6 +670,12 @@
               "inactive"
             ]
           },
+          "created_by": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
           "created_at": {
             "type": "string",
             "format": "date-time"
@@ -677,6 +683,12 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionnaireQuestion"
+            }
           }
         }
       },
@@ -767,6 +779,12 @@
               "null"
             ]
           },
+          "created_by": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
           "created_at": {
             "type": "string",
             "format": "date-time"
@@ -774,6 +792,29 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "workflow_stage_id": {
+                  "type": "integer"
+                },
+                "is_required": {
+                  "type": "boolean"
+                },
+                "due_days_after_stage_entry": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                }
+              }
+            }
           }
         }
       },
@@ -1014,7 +1055,7 @@
         }
       },
       "Forbidden": {
-        "description": "Forbidden — no active store access",
+        "description": "Forbidden \u00e2\u20ac\u201d no active store access",
         "content": {
           "application/json": {
             "schema": {
@@ -1046,7 +1087,6 @@
     }
   },
   "paths": {
-    
     "/api/v1/auth/login": {
       "post": {
         "tags": [
@@ -1169,8 +1209,6 @@
         }
       }
     },
- 
-  
     "/api/v1/stores/{store}/copy-configuration": {
       "post": {
         "tags": [
@@ -1290,7 +1328,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Paginated workflows",
+            "description": "Paginated workflows with nested stages",
             "content": {
               "application/json": {
                 "schema": {
@@ -1305,16 +1343,293 @@
                         "data": {
                           "type": "array",
                           "items": {
-                            "$ref": "#/components/schemas/HiringWorkflow"
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer"
+                              },
+                              "store_id": {
+                                "type": "integer"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "version": {
+                                "type": "integer"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "draft",
+                                  "active",
+                                  "archived"
+                                ]
+                              },
+                              "parent_workflow_id": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ]
+                              },
+                              "created_by": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ]
+                              },
+                              "published_at": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ],
+                                "format": "date-time"
+                              },
+                              "archived_at": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ],
+                                "format": "date-time"
+                              },
+                              "stages": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "integer"
+                                    },
+                                    "hiring_workflow_id": {
+                                      "type": "integer"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "stage_type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "application",
+                                        "screening",
+                                        "interview",
+                                        "documents",
+                                        "approval",
+                                        "onboarding",
+                                        "hired",
+                                        "rejected",
+                                        "custom"
+                                      ]
+                                    },
+                                    "position": {
+                                      "type": "integer"
+                                    },
+                                    "is_initial": {
+                                      "type": "boolean"
+                                    },
+                                    "is_terminal": {
+                                      "type": "boolean"
+                                    },
+                                    "auto_advance_enabled": {
+                                      "type": "boolean"
+                                    },
+                                    "configuration": {
+                                      "type": [
+                                        "object",
+                                        "null"
+                                      ]
+                                    },
+                                    "created_at": {
+                                      "type": "string",
+                                      "format": "date-time"
+                                    },
+                                    "updated_at": {
+                                      "type": "string",
+                                      "format": "date-time"
+                                    }
+                                  }
+                                }
+                              },
+                              "created_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "updated_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            }
+                          }
+                        },
+                        "links": {
+                          "type": "object",
+                          "properties": {
+                            "first": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "last": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "prev": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "next": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
                           }
                         },
                         "meta": {
-                          "$ref": "#/components/schemas/PaginationMeta"
-                        },
-                        "links": {
-                          "$ref": "#/components/schemas/PaginationLinks"
+                          "type": "object",
+                          "properties": {
+                            "current_page": {
+                              "type": "integer"
+                            },
+                            "from": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            },
+                            "last_page": {
+                              "type": "integer"
+                            },
+                            "links": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "url": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "label": {
+                                    "type": "string"
+                                  },
+                                  "page": {
+                                    "type": [
+                                      "integer",
+                                      "null"
+                                    ]
+                                  },
+                                  "active": {
+                                    "type": "boolean"
+                                  }
+                                }
+                              }
+                            },
+                            "path": {
+                              "type": "string"
+                            },
+                            "per_page": {
+                              "type": "integer"
+                            },
+                            "to": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            },
+                            "total": {
+                              "type": "integer"
+                            }
+                          }
                         }
                       }
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "data": {
+                    "data": [
+                      {
+                        "id": 1,
+                        "store_id": 1,
+                        "name": "Standard Hiring Flow",
+                        "version": 1,
+                        "status": "active",
+                        "parent_workflow_id": null,
+                        "created_by": 1,
+                        "published_at": "2026-06-12T16:35:00.000000Z",
+                        "archived_at": null,
+                        "stages": [
+                          {
+                            "id": 1,
+                            "hiring_workflow_id": 1,
+                            "name": "Application",
+                            "stage_type": "application",
+                            "position": 1,
+                            "is_initial": true,
+                            "is_terminal": false,
+                            "auto_advance_enabled": false,
+                            "configuration": null,
+                            "created_at": "2026-06-12T16:35:00.000000Z",
+                            "updated_at": "2026-06-12T16:35:00.000000Z"
+                          },
+                          {
+                            "id": 2,
+                            "hiring_workflow_id": 1,
+                            "name": "Hired",
+                            "stage_type": "hired",
+                            "position": 2,
+                            "is_initial": false,
+                            "is_terminal": true,
+                            "auto_advance_enabled": false,
+                            "configuration": null,
+                            "created_at": "2026-06-12T16:35:00.000000Z",
+                            "updated_at": "2026-06-12T16:35:00.000000Z"
+                          }
+                        ],
+                        "created_at": "2026-06-12T16:35:00.000000Z",
+                        "updated_at": "2026-06-12T16:35:00.000000Z"
+                      }
+                    ],
+                    "links": {
+                      "first": "http://localhost:8000/api/v1/stores/s1/workflows?page=1",
+                      "last": "http://localhost:8000/api/v1/stores/s1/workflows?page=1",
+                      "prev": null,
+                      "next": null
+                    },
+                    "meta": {
+                      "current_page": 1,
+                      "from": 1,
+                      "last_page": 1,
+                      "links": [
+                        {
+                          "url": null,
+                          "label": "&laquo; Previous",
+                          "page": null,
+                          "active": false
+                        },
+                        {
+                          "url": "http://localhost:8000/api/v1/stores/s1/workflows?page=1",
+                          "label": "1",
+                          "page": 1,
+                          "active": true
+                        },
+                        {
+                          "url": null,
+                          "label": "Next &raquo;",
+                          "page": null,
+                          "active": false
+                        }
+                      ],
+                      "path": "http://localhost:8000/api/v1/stores/s1/workflows",
+                      "per_page": 20,
+                      "to": 1,
+                      "total": 1
                     }
                   }
                 }
@@ -1593,95 +1908,6 @@
       }
     },
     "/api/v1/stores/{store}/workflows/{workflow}/stages": {
-      "get": {
-        "tags": [
-          "Workflow Stages"
-        ],
-        "summary": "List stages (ordered by position)",
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/storeId"
-          },
-          {
-            "$ref": "#/components/parameters/workflowId"
-          },
-          {
-            "$ref": "#/components/parameters/perPage"
-          },
-          {
-            "name": "stage_type",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "application",
-                "screening",
-                "interview",
-                "documents",
-                "approval",
-                "onboarding",
-                "hired",
-                "rejected",
-                "custom"
-              ]
-            }
-          },
-          {
-            "name": "is_initial",
-            "in": "query",
-            "schema": {
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "is_terminal",
-            "in": "query",
-            "schema": {
-              "type": "boolean"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Paginated stages",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "data": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/WorkflowStage"
-                          }
-                        },
-                        "meta": {
-                          "$ref": "#/components/schemas/PaginationMeta"
-                        },
-                        "links": {
-                          "$ref": "#/components/schemas/PaginationLinks"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthenticated"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          }
-        }
-      },
       "post": {
         "tags": [
           "Workflow Stages"
@@ -2559,7 +2785,7 @@
         "tags": [
           "Job Openings"
         ],
-        "summary": "Publish job opening (draft → published)",
+        "summary": "Publish job opening (draft \u00e2\u2020\u2019 published)",
         "parameters": [
           {
             "$ref": "#/components/parameters/storeId"
@@ -2604,7 +2830,7 @@
         "tags": [
           "Job Openings"
         ],
-        "summary": "Close job opening (published → closed)",
+        "summary": "Close job opening (published \u00e2\u2020\u2019 closed)",
         "parameters": [
           {
             "$ref": "#/components/parameters/storeId"
@@ -3213,16 +3439,263 @@
                         "data": {
                           "type": "array",
                           "items": {
-                            "$ref": "#/components/schemas/QuestionnaireTemplate"
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer"
+                              },
+                              "store_id": {
+                                "type": "integer"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "version": {
+                                "type": "integer"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "active",
+                                  "inactive"
+                                ]
+                              },
+                              "created_by": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ]
+                              },
+                              "questions": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "integer"
+                                    },
+                                    "questionnaire_template_id": {
+                                      "type": "integer"
+                                    },
+                                    "question_key": {
+                                      "type": "string"
+                                    },
+                                    "label": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "text",
+                                        "number",
+                                        "boolean",
+                                        "date",
+                                        "select",
+                                        "multiselect"
+                                      ]
+                                    },
+                                    "options": {
+                                      "type": [
+                                        "array",
+                                        "null"
+                                      ]
+                                    },
+                                    "validation_rules": {
+                                      "type": [
+                                        "array",
+                                        "null"
+                                      ]
+                                    },
+                                    "visibility_rules": {
+                                      "type": [
+                                        "array",
+                                        "null"
+                                      ]
+                                    },
+                                    "is_required": {
+                                      "type": "boolean"
+                                    },
+                                    "position": {
+                                      "type": "integer"
+                                    },
+                                    "created_at": {
+                                      "type": "string",
+                                      "format": "date-time"
+                                    },
+                                    "updated_at": {
+                                      "type": "string",
+                                      "format": "date-time"
+                                    }
+                                  }
+                                }
+                              },
+                              "created_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "updated_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            }
+                          }
+                        },
+                        "links": {
+                          "type": "object",
+                          "properties": {
+                            "first": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "last": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "prev": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "next": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
                           }
                         },
                         "meta": {
-                          "$ref": "#/components/schemas/PaginationMeta"
-                        },
-                        "links": {
-                          "$ref": "#/components/schemas/PaginationLinks"
+                          "type": "object",
+                          "properties": {
+                            "current_page": {
+                              "type": "integer"
+                            },
+                            "from": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            },
+                            "last_page": {
+                              "type": "integer"
+                            },
+                            "links": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "url": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "label": {
+                                    "type": "string"
+                                  },
+                                  "page": {
+                                    "type": [
+                                      "integer",
+                                      "null"
+                                    ]
+                                  },
+                                  "active": {
+                                    "type": "boolean"
+                                  }
+                                }
+                              }
+                            },
+                            "path": {
+                              "type": "string"
+                            },
+                            "per_page": {
+                              "type": "integer"
+                            },
+                            "to": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            },
+                            "total": {
+                              "type": "integer"
+                            }
+                          }
                         }
                       }
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "data": {
+                    "data": [
+                      {
+                        "id": 1,
+                        "store_id": 1,
+                        "name": "General Application Form2",
+                        "version": 1,
+                        "status": "active",
+                        "created_by": 1,
+                        "questions": [
+                          {
+                            "id": 1,
+                            "questionnaire_template_id": 1,
+                            "question_key": "exp",
+                            "label": "Years of Experience",
+                            "type": "number",
+                            "options": null,
+                            "validation_rules": null,
+                            "visibility_rules": null,
+                            "is_required": true,
+                            "position": 1,
+                            "created_at": "2026-06-12T16:35:52.000000Z",
+                            "updated_at": "2026-06-12T16:35:52.000000Z"
+                          }
+                        ],
+                        "created_at": "2026-06-12T16:35:52.000000Z",
+                        "updated_at": "2026-06-12T16:35:52.000000Z"
+                      }
+                    ],
+                    "links": {
+                      "first": "http://localhost:8000/api/v1/stores/s1/questionnaires?page=1",
+                      "last": "http://localhost:8000/api/v1/stores/s1/questionnaires?page=1",
+                      "prev": null,
+                      "next": null
+                    },
+                    "meta": {
+                      "current_page": 1,
+                      "from": 1,
+                      "last_page": 1,
+                      "links": [
+                        {
+                          "url": null,
+                          "label": "&laquo; Previous",
+                          "page": null,
+                          "active": false
+                        },
+                        {
+                          "url": "http://localhost:8000/api/v1/stores/s1/questionnaires?page=1",
+                          "label": "1",
+                          "page": 1,
+                          "active": true
+                        },
+                        {
+                          "url": null,
+                          "label": "Next &raquo;",
+                          "page": null,
+                          "active": false
+                        }
+                      ],
+                      "path": "http://localhost:8000/api/v1/stores/s1/questionnaires",
+                      "per_page": 20,
+                      "to": 1,
+                      "total": 1
                     }
                   }
                 }
@@ -3261,10 +3734,12 @@
                 ],
                 "properties": {
                   "name": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 255
                   },
                   "version": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 1
                   },
                   "status": {
                     "type": "string",
@@ -3280,7 +3755,8 @@
                       "required": [
                         "question_key",
                         "label",
-                        "type"
+                        "type",
+                        "position"
                       ],
                       "properties": {
                         "question_key": {
@@ -3305,11 +3781,66 @@
                           "type": "boolean"
                         },
                         "position": {
-                          "type": "integer"
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "options": {
+                          "type": [
+                            "array",
+                            "null"
+                          ]
+                        },
+                        "validation_rules": {
+                          "type": [
+                            "array",
+                            "null"
+                          ]
+                        },
+                        "visibility_rules": {
+                          "type": [
+                            "array",
+                            "null"
+                          ]
                         }
                       }
                     }
+                  },
+                  "stage_assignment": {
+                    "type": "object",
+                    "description": "Optional. When present, links the newly created questionnaire to the specified workflow stage. The stage must belong to the same store.",
+                    "required": [
+                      "workflow_stage_id"
+                    ],
+                    "properties": {
+                      "workflow_stage_id": {
+                        "type": "integer",
+                        "description": "ID of a workflow_stage that belongs to a hiring workflow under this store."
+                      },
+                      "is_required": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Whether the questionnaire is required at this stage. Defaults to true."
+                      }
+                    }
                   }
+                }
+              },
+              "example": {
+                "name": "General Application Form",
+                "version": 1,
+                "status": "active",
+                "questions": [
+                  {
+                    "question_key": "exp",
+                    "label": "Years of Experience",
+                    "type": "number",
+                    "is_required": true,
+                    "position": 1
+                  }
+                ],
+                "stage_assignment": {
+                  "workflow_stage_id": 5,
+                  "is_required": true
                 }
               }
             }
@@ -3317,7 +3848,7 @@
         },
         "responses": {
           "201": {
-            "description": "Questionnaire template created",
+            "description": "Questionnaire template created (with optional questions and stage assignment)",
             "content": {
               "application/json": {
                 "schema": {
@@ -3327,8 +3858,177 @@
                       "type": "boolean"
                     },
                     "data": {
-                      "$ref": "#/components/schemas/QuestionnaireTemplate"
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "store_id": {
+                          "type": "integer"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "integer"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "inactive"
+                          ]
+                        },
+                        "created_by": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "questions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer"
+                              },
+                              "questionnaire_template_id": {
+                                "type": "integer"
+                              },
+                              "question_key": {
+                                "type": "string"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "text",
+                                  "number",
+                                  "boolean",
+                                  "date",
+                                  "select",
+                                  "multiselect"
+                                ]
+                              },
+                              "options": {
+                                "type": [
+                                  "array",
+                                  "null"
+                                ]
+                              },
+                              "validation_rules": {
+                                "type": [
+                                  "array",
+                                  "null"
+                                ]
+                              },
+                              "visibility_rules": {
+                                "type": [
+                                  "array",
+                                  "null"
+                                ]
+                              },
+                              "is_required": {
+                                "type": "boolean"
+                              },
+                              "position": {
+                                "type": "integer"
+                              },
+                              "created_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "updated_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            }
+                          }
+                        },
+                        "stage_assignments": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer"
+                              },
+                              "workflow_stage_id": {
+                                "type": "integer"
+                              },
+                              "questionnaire_template_id": {
+                                "type": "integer"
+                              },
+                              "is_required": {
+                                "type": "boolean"
+                              },
+                              "created_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "updated_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            }
+                          }
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updated_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "string"
                     }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "message": "Questionnaire created",
+                  "data": {
+                    "id": 1,
+                    "store_id": 1,
+                    "name": "General Application Form",
+                    "version": 1,
+                    "status": "active",
+                    "created_by": 1,
+                    "questions": [
+                      {
+                        "id": 1,
+                        "questionnaire_template_id": 1,
+                        "question_key": "exp",
+                        "label": "Years of Experience",
+                        "type": "number",
+                        "options": null,
+                        "validation_rules": null,
+                        "visibility_rules": null,
+                        "is_required": true,
+                        "position": 1,
+                        "created_at": "2026-06-15T10:00:00.000000Z",
+                        "updated_at": "2026-06-15T10:00:00.000000Z"
+                      }
+                    ],
+                    "stage_assignments": [
+                      {
+                        "id": 1,
+                        "workflow_stage_id": 5,
+                        "questionnaire_template_id": 1,
+                        "is_required": true,
+                        "created_at": "2026-06-15T10:00:00.000000Z",
+                        "updated_at": "2026-06-15T10:00:00.000000Z"
+                      }
+                    ],
+                    "created_at": "2026-06-15T10:00:00.000000Z",
+                    "updated_at": "2026-06-15T10:00:00.000000Z"
                   }
                 }
               }
@@ -3485,93 +4185,6 @@
       }
     },
     "/api/v1/stores/{store}/questionnaires/{questionnaire}/questions": {
-      "get": {
-        "tags": [
-          "Questionnaire Questions"
-        ],
-        "summary": "List questions (ordered by position)",
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/storeId"
-          },
-          {
-            "$ref": "#/components/parameters/questionnaireId"
-          },
-          {
-            "$ref": "#/components/parameters/perPage"
-          },
-          {
-            "name": "type",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "text",
-                "number",
-                "boolean",
-                "date",
-                "select",
-                "multiselect"
-              ]
-            }
-          },
-          {
-            "name": "is_required",
-            "in": "query",
-            "schema": {
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "search",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "description": "Filter by label or question_key (LIKE)"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Paginated questions",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "data": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/QuestionnaireQuestion"
-                          }
-                        },
-                        "meta": {
-                          "$ref": "#/components/schemas/PaginationMeta"
-                        },
-                        "links": {
-                          "$ref": "#/components/schemas/PaginationLinks"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthenticated"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          }
-        }
-      },
       "post": {
         "tags": [
           "Questionnaire Questions"
@@ -3836,16 +4449,227 @@
                         "data": {
                           "type": "array",
                           "items": {
-                            "$ref": "#/components/schemas/DocumentTemplate"
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer"
+                              },
+                              "store_id": {
+                                "type": "integer"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "document_type": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "requires_signature": {
+                                "type": "boolean"
+                              },
+                              "description": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "created_by": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ]
+                              },
+                              "requirements": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "integer"
+                                    },
+                                    "workflow_stage_id": {
+                                      "type": "integer"
+                                    },
+                                    "is_required": {
+                                      "type": "boolean"
+                                    },
+                                    "due_days_after_stage_entry": {
+                                      "type": [
+                                        "integer",
+                                        "null"
+                                      ]
+                                    }
+                                  }
+                                }
+                              },
+                              "created_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "updated_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            }
+                          }
+                        },
+                        "links": {
+                          "type": "object",
+                          "properties": {
+                            "first": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "last": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "prev": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "next": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
                           }
                         },
                         "meta": {
-                          "$ref": "#/components/schemas/PaginationMeta"
-                        },
-                        "links": {
-                          "$ref": "#/components/schemas/PaginationLinks"
+                          "type": "object",
+                          "properties": {
+                            "current_page": {
+                              "type": "integer"
+                            },
+                            "from": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            },
+                            "last_page": {
+                              "type": "integer"
+                            },
+                            "links": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "url": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "label": {
+                                    "type": "string"
+                                  },
+                                  "page": {
+                                    "type": [
+                                      "integer",
+                                      "null"
+                                    ]
+                                  },
+                                  "active": {
+                                    "type": "boolean"
+                                  }
+                                }
+                              }
+                            },
+                            "path": {
+                              "type": "string"
+                            },
+                            "per_page": {
+                              "type": "integer"
+                            },
+                            "to": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            },
+                            "total": {
+                              "type": "integer"
+                            }
+                          }
                         }
                       }
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "data": {
+                    "data": [
+                      {
+                        "id": 1,
+                        "store_id": 1,
+                        "name": "Work Permit",
+                        "document_type": "work_permit",
+                        "requires_signature": false,
+                        "description": "Work authorization or permit document",
+                        "created_by": 1,
+                        "requirements": [
+                          {
+                            "id": 1,
+                            "workflow_stage_id": 5,
+                            "is_required": true,
+                            "due_days_after_stage_entry": 2
+                          },
+                          {
+                            "id": 2,
+                            "workflow_stage_id": 6,
+                            "is_required": true,
+                            "due_days_after_stage_entry": 5
+                          }
+                        ],
+                        "created_at": "2026-06-12T16:35:21.000000Z",
+                        "updated_at": "2026-06-12T16:35:21.000000Z"
+                      }
+                    ],
+                    "links": {
+                      "first": "http://localhost:8000/api/v1/stores/s1/document-templates?page=1",
+                      "last": "http://localhost:8000/api/v1/stores/s1/document-templates?page=1",
+                      "prev": null,
+                      "next": null
+                    },
+                    "meta": {
+                      "current_page": 1,
+                      "from": 1,
+                      "last_page": 1,
+                      "links": [
+                        {
+                          "url": null,
+                          "label": "&laquo; Previous",
+                          "page": null,
+                          "active": false
+                        },
+                        {
+                          "url": "http://localhost:8000/api/v1/stores/s1/document-templates?page=1",
+                          "label": "1",
+                          "page": 1,
+                          "active": true
+                        },
+                        {
+                          "url": null,
+                          "label": "Next &raquo;",
+                          "page": null,
+                          "active": false
+                        }
+                      ],
+                      "path": "http://localhost:8000/api/v1/stores/s1/document-templates",
+                      "per_page": 20,
+                      "to": 1,
+                      "total": 1
                     }
                   }
                 }
@@ -4091,139 +4915,7 @@
       }
     },
     "/api/v1/workflow-stages/{stage}/document-requirements": {
-      "get": {
-        "tags": [
-          "Stage Document Requirements"
-        ],
-        "summary": "List document requirements for a stage",
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/stageId"
-          },
-          {
-            "$ref": "#/components/parameters/perPage"
-          },
-          {
-            "name": "is_required",
-            "in": "query",
-            "schema": {
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "document_template_id",
-            "in": "query",
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Paginated requirements",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "data": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/StageDocumentRequirement"
-                          }
-                        },
-                        "meta": {
-                          "$ref": "#/components/schemas/PaginationMeta"
-                        },
-                        "links": {
-                          "$ref": "#/components/schemas/PaginationLinks"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthenticated"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Stage Document Requirements"
-        ],
-        "summary": "Add document requirement to stage",
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/stageId"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "document_template_id"
-                ],
-                "properties": {
-                  "document_template_id": {
-                    "type": "integer"
-                  },
-                  "is_required": {
-                    "type": "boolean",
-                    "default": true
-                  },
-                  "due_days_after_stage_entry": {
-                    "type": "integer"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Requirement created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/StageDocumentRequirement"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthenticated"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "422": {
-            "$ref": "#/components/responses/ValidationError"
-          }
-        }
-      }
+      
     },
     "/api/v1/stage-document-requirements/{requirement}": {
       "get": {

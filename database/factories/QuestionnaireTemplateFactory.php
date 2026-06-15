@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\QuestionnaireStatus;
 use App\Models\QuestionnaireTemplate;
 use App\Models\Store;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -19,7 +20,7 @@ class QuestionnaireTemplateFactory extends Factory
             'store_id'   => Store::factory(),
             'name'       => $this->faker->unique()->words(3, true) . ' Questionnaire',
             'version'    => 1,
-            'status'     => 'active',
+            'status'     => QuestionnaireStatus::Active,
             'created_by' => null,
         ];
     }
@@ -31,6 +32,6 @@ class QuestionnaireTemplateFactory extends Factory
 
     public function inactive(): static
     {
-        return $this->state(['status' => 'inactive']);
+        return $this->state(['status' => QuestionnaireStatus::Inactive]);
     }
 }

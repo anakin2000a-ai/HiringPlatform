@@ -187,7 +187,7 @@ class NatsSyncTest extends TestCase
         );
 
         $user->refresh();
-        $this->assertSame('inactive', $user->status);
+        $this->assertSame('inactive', $user->status instanceof \BackedEnum ? $user->status->value : $user->status);
 
         // User row still exists — no physical delete
         $this->assertDatabaseHas('users', ['id' => $user->id]);
@@ -200,7 +200,7 @@ class NatsSyncTest extends TestCase
             $this->envelope('auth.v1.user.deleted', ['id' => 999999])
         );
 
-        $this->assertSame('processed', $result->status);
+        $this->assertSame('processed', $result->status instanceof \BackedEnum ? $result->status->value : $result->status);
         $this->assertDatabaseCount('users', 0);
     }
 
@@ -276,7 +276,7 @@ class NatsSyncTest extends TestCase
         }
 
         $inbox = InboxEvent::where('event_id', $envelope['event_id'])->first();
-        $this->assertSame('failed', $inbox->status);
+        $this->assertSame('failed', $inbox->status instanceof \BackedEnum ? $inbox->status->value : $inbox->status);
         $this->assertNotNull($inbox->last_error);
         $this->assertDatabaseCount('stores', 0);
     }
@@ -348,7 +348,7 @@ class NatsSyncTest extends TestCase
             $this->envelope('auth.v1.store.updated', ['id' => 999999, 'store_name' => 'Ghost'])
         );
 
-        $this->assertSame('processed', $result->status);
+        $this->assertSame('processed', $result->status instanceof \BackedEnum ? $result->status->value : $result->status);
         $this->assertDatabaseCount('stores', 0);
     }
 
@@ -367,7 +367,7 @@ class NatsSyncTest extends TestCase
         );
 
         // Store still exists — no safe deletion path without SoftDeletes or status column.
-        $this->assertSame('processed', $result->status);
+        $this->assertSame('processed', $result->status instanceof \BackedEnum ? $result->status->value : $result->status);
         $this->assertDatabaseHas('stores', ['id' => $store->id]);
     }
 
@@ -378,7 +378,7 @@ class NatsSyncTest extends TestCase
             $this->envelope('auth.v1.store.deleted', ['id' => 999999])
         );
 
-        $this->assertSame('processed', $result->status);
+        $this->assertSame('processed', $result->status instanceof \BackedEnum ? $result->status->value : $result->status);
     }
 
     // -----------------------------------------------------------------------

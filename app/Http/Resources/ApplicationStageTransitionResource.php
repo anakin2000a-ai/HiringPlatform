@@ -15,7 +15,7 @@ class ApplicationStageTransitionResource extends JsonResource
             'from_stage_id'   => $this->from_stage_id,
             'to_stage_id'     => $this->to_stage_id,
             'changed_by'      => $this->changed_by,
-            'transition_type' => $this->transition_type,
+            'transition_type' => $this->transition_type?->value,
             'reason'          => $this->reason,
             'metadata'        => $this->metadata,
             'created_at'      => $this->created_at,

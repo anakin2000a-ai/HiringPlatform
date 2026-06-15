@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Enums\EmploymentType;
+use App\Enums\JobOpeningStatus;
 use App\Models\HiringWorkflow;
 use App\Models\JobOpening;
 use App\Models\Store;
@@ -21,9 +23,9 @@ class JobOpeningFactory extends Factory
             'hiring_workflow_id' => HiringWorkflow::factory(),
             'title' => $this->faker->jobTitle(),
             'description' => $this->faker->optional()->paragraph(),
-            'employment_type' => $this->faker->optional()->randomElement(['full_time', 'part_time', 'contract', 'temporary']),
-            'openings_count' => 1,
-            'status' => 'draft',
+            'employment_type' => $this->faker->optional()->randomElement(EmploymentType::cases()),
+            'openings_count'  => 1,
+            'status'          => JobOpeningStatus::Draft,
             'published_at' => null,
             'closed_at' => null,
             'created_by' => null,
@@ -33,7 +35,7 @@ class JobOpeningFactory extends Factory
     public function published(): static
     {
         return $this->state([
-            'status' => 'published',
+            'status'       => JobOpeningStatus::Published,
             'published_at' => now(),
         ]);
     }
@@ -41,9 +43,9 @@ class JobOpeningFactory extends Factory
     public function closed(): static
     {
         return $this->state([
-            'status' => 'closed',
+            'status'       => JobOpeningStatus::Closed,
             'published_at' => now()->subDay(),
-            'closed_at' => now(),
+            'closed_at'    => now(),
         ]);
     }
 

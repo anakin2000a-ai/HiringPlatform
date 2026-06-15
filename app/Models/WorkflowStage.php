@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\StageType;
 use Database\Factories\WorkflowStageFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,10 +27,11 @@ class WorkflowStage extends Model
     protected function casts(): array
     {
         return [
-            'is_initial' => 'boolean',
-            'is_terminal' => 'boolean',
+            'is_initial'           => 'boolean',
+            'is_terminal'          => 'boolean',
             'auto_advance_enabled' => 'boolean',
-            'configuration' => 'array',
+            'configuration'        => 'array',
+            'stage_type'           => StageType::class,
         ];
     }
 

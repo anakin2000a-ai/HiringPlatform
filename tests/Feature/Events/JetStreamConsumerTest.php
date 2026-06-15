@@ -294,7 +294,7 @@ class JetStreamConsumerTest extends TestCase
 
         $row = InboxEvent::where('event_id', 'max-attempts-uuid-006')->first();
         $this->assertNotNull($row);
-        $this->assertSame('parked', $row->status);
+        $this->assertSame('parked', $row->status instanceof \BackedEnum ? $row->status->value : $row->status);
         $this->assertNotNull($row->failed_at);
         $this->assertNotNull($row->last_error);
     }

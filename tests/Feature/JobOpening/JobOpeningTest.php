@@ -276,7 +276,8 @@ class JobOpeningTest extends TestCase
             ])
             ->assertOk();
 
-        $this->assertEquals('draft', $job->fresh()->status);
+        $freshStatus = $job->fresh()->status;
+        $this->assertEquals('draft', $freshStatus instanceof \BackedEnum ? $freshStatus->value : $freshStatus);
     }
 
     // -----------------------------------------------------------------------
@@ -294,7 +295,8 @@ class JobOpeningTest extends TestCase
             ->assertJsonPath('data.status', 'published');
 
         $this->assertNotNull($job->fresh()->published_at);
-        $this->assertEquals('published', $job->fresh()->status);
+        $freshStatus2 = $job->fresh()->status;
+        $this->assertEquals('published', $freshStatus2 instanceof \BackedEnum ? $freshStatus2->value : $freshStatus2);
     }
 
     public function test_cannot_publish_an_already_published_job_opening(): void
@@ -323,7 +325,8 @@ class JobOpeningTest extends TestCase
             ->assertJsonPath('data.status', 'closed');
 
         $this->assertNotNull($job->fresh()->closed_at);
-        $this->assertEquals('closed', $job->fresh()->status);
+        $freshStatus3 = $job->fresh()->status;
+        $this->assertEquals('closed', $freshStatus3 instanceof \BackedEnum ? $freshStatus3->value : $freshStatus3);
     }
 
     public function test_can_close_a_draft_job_opening(): void

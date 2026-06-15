@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\InboxEventStatus;
 use Illuminate\Database\Eloquent\Model;
 
 class InboxEvent extends Model
@@ -24,6 +25,7 @@ class InboxEvent extends Model
             'payload'      => 'array',
             'processed_at' => 'datetime',
             'failed_at'    => 'datetime',
+            'status'       => InboxEventStatus::class,
         ];
     }
 }

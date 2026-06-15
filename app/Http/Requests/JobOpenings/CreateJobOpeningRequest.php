@@ -2,9 +2,12 @@
 
 namespace App\Http\Requests\JobOpenings;
 
+use App\Enums\EmploymentType;
+use App\Enums\JobOpeningStatus;
 use App\Models\HiringWorkflow;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class CreateJobOpeningRequest extends FormRequest
 {
@@ -19,7 +22,7 @@ class CreateJobOpeningRequest extends FormRequest
             'hiring_workflow_id' => ['required', 'integer', 'exists:hiring_workflows,id'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string'],
-            'employment_type' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'employment_type' => ['sometimes', 'nullable', 'string', Rule::enum(EmploymentType::class)],
             'openings_count' => ['sometimes', 'integer', 'min:1'],
         ];
     }
@@ -50,7 +53,7 @@ class CreateJobOpeningRequest extends FormRequest
 
         $exists = \App\Models\JobOpening::where('store_id', $store->id)
             ->where('title', $this->input('title'))
-            ->where('status', 'published')
+            ->where('status', JobOpeningStatus::Published)
             ->exists();
 
         if ($exists) {

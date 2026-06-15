@@ -22,39 +22,7 @@ class WorkflowStageController extends Controller
         private readonly StoreAccessService $storeAccessService,
     ) {}
 
-    public function index(\Illuminate\Http\Request $request, Store $store, HiringWorkflow $workflow): JsonResponse
-    {
-        if (! $this->workflowBelongsToStore($workflow, $store)) {
-            return ApiResponse::notFound('Workflow not found');
-        }
-
-        $request->validate([
-            'per_page'    => ['sometimes', 'integer', 'min:1', 'max:100'],
-            'stage_type'  => ['sometimes', 'string'],
-            'is_initial'  => ['sometimes', 'boolean'],
-            'is_terminal' => ['sometimes', 'boolean'],
-        ]);
-
-        $query = $workflow->stages();
-
-        if ($request->filled('stage_type')) {
-            $query->where('stage_type', $request->input('stage_type'));
-        }
-        if ($request->has('is_initial')) {
-            $query->where('is_initial', $request->boolean('is_initial'));
-        }
-        if ($request->has('is_terminal')) {
-            $query->where('is_terminal', $request->boolean('is_terminal'));
-        }
-
-        $stages = $query->orderBy('position')->orderBy('id')
-            ->paginate($request->integer('per_page', 20));
-
-        return ApiResponse::success(
-            WorkflowStageResource::collection($stages)->response()->getData(true)
-        );
-    }
-
+    
     public function store(CreateWorkflowStageRequest $request, Store $store, HiringWorkflow $workflow): JsonResponse
     {
         if (! $this->workflowBelongsToStore($workflow, $store)) {

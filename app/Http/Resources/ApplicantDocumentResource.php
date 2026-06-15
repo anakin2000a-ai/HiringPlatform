@@ -15,7 +15,7 @@ class ApplicantDocumentResource extends JsonResource
             'workflow_stage_id'            => $this->workflow_stage_id,
             'stage_document_requirement_id' => $this->stage_document_requirement_id,
             'document_template_id'         => $this->document_template_id,
-            'status'                       => $this->status,
+            'status'                       => $this->status?->value,
             'file_path'                    => $this->file_path,
             'external_signature_id'        => $this->external_signature_id,
             'submitted_at'                 => $this->submitted_at,

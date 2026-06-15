@@ -13,7 +13,7 @@ class WorkflowStageResource extends JsonResource
             'id' => $this->id,
             'hiring_workflow_id' => $this->hiring_workflow_id,
             'name' => $this->name,
-            'stage_type' => $this->stage_type,
+            'stage_type' => $this->stage_type?->value,
             'position' => $this->position,
             'is_initial' => $this->is_initial,
             'is_terminal' => $this->is_terminal,

@@ -14,7 +14,7 @@ class HiringWorkflowResource extends JsonResource
             'store_id' => $this->store_id,
             'name' => $this->name,
             'version' => $this->version,
-            'status' => $this->status,
+            'status' => $this->status?->value,
             'parent_workflow_id' => $this->parent_workflow_id,
             'created_by' => $this->created_by,
             'published_at' => $this->published_at,

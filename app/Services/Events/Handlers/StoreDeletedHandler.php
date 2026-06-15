@@ -2,6 +2,7 @@
 
 namespace App\Services\Events\Handlers;
 
+use App\Enums\StoreStatus;
 use App\Models\Store;
 use App\Services\Events\EventHandlerInterface;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +34,7 @@ class StoreDeletedHandler implements EventHandlerInterface
         }
 
         DB::transaction(static function () use ($store): void {
-            $store->update(['status' => 'inactive']);
+            $store->update(['status' => StoreStatus::Inactive]);
         });
     }
 }

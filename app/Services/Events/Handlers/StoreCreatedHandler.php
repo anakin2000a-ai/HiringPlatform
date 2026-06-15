@@ -2,6 +2,7 @@
 
 namespace App\Services\Events\Handlers;
 
+use App\Enums\StoreStatus;
 use App\Models\FranchiseAccount;
 use App\Models\Store;
 use App\Services\Events\EventHandlerInterface;
@@ -54,7 +55,7 @@ class StoreCreatedHandler implements EventHandlerInterface
 
             if ($store !== null) {
                 // Reactivate if previously deactivated; always keep store_name current.
-                $store->update(['store_name' => $storeName, 'status' => 'active']);
+                $store->update(['store_name' => $storeName, 'status' => StoreStatus::Active]);
                 return;
             }
 
@@ -62,7 +63,7 @@ class StoreCreatedHandler implements EventHandlerInterface
                 'id'                   => $id,
                 // 'franchise_account_id' => $franchiseAccountId,
                 'store_name'           => $storeName,
-                'status'               => 'active',
+                'status'               => StoreStatus::Active,
             ]);
         });
     }

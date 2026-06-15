@@ -2,6 +2,7 @@
 
 namespace App\Services\AccessControl;
 
+use App\Enums\UserStatus;
 use App\Models\Store;
 use App\Models\User;
 use App\Models\UserStoreAccess;
@@ -14,7 +15,7 @@ class StoreAccessService
         return UserStoreAccess::query()
             ->where('user_id', $user->id)
             ->where('store_id', $store->id)
-            ->where('status', 'active')
+            ->where('status', UserStatus::Active)
             ->exists();
     }
 
@@ -22,7 +23,7 @@ class StoreAccessService
     {
         return UserStoreAccess::query()
             ->where('user_id', $user->id)
-            ->where('status', 'active')
+            ->where('status', UserStatus::Active)
             ->pluck('store_id')
             ->toArray();
     }
@@ -32,7 +33,7 @@ class StoreAccessService
         return UserStoreAccess::query()
             ->where('user_id', $user->id)
             ->where('store_id', $store->id)
-            ->where('status', 'active')
+            ->where('status', UserStatus::Active)
             ->value('role');
     }
 
@@ -40,7 +41,7 @@ class StoreAccessService
     {
         $storeId = UserStoreAccess::query()
             ->where('user_id', $user->id)
-            ->where('status', 'active')
+            ->where('status', UserStatus::Active)
             ->value('store_id');
 
         if ($storeId === null) {

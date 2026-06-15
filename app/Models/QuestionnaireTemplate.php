@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\QuestionnaireStatus;
 use Database\Factories\QuestionnaireTemplateFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -20,6 +21,13 @@ class QuestionnaireTemplate extends Model
         'status',
         'created_by',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'status' => QuestionnaireStatus::class,
+        ];
+    }
 
     public function store(): BelongsTo
     {
