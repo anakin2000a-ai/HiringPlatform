@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\TransitionType;
 use Database\Factories\ApplicationStageTransitionFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -28,8 +29,9 @@ class ApplicationStageTransition extends Model
     protected function casts(): array
     {
         return [
-            'metadata'   => 'array',
-            'created_at' => 'datetime',
+            'metadata'        => 'array',
+            'created_at'      => 'datetime',
+            'transition_type' => TransitionType::class,
         ];
     }
 

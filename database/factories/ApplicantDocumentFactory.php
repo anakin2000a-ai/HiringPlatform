@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\DocumentStatus;
 use App\Models\ApplicantDocument;
 use App\Models\Application;
 use App\Models\DocumentTemplate;
@@ -22,7 +23,7 @@ class ApplicantDocumentFactory extends Factory
             'workflow_stage_id'           => WorkflowStage::factory(),
             'stage_document_requirement_id' => null,
             'document_template_id'        => DocumentTemplate::factory(),
-            'status'                      => 'pending',
+            'status'                      => DocumentStatus::Pending,
             'file_path'                   => null,
             'external_signature_id'       => null,
             'submitted_at'                => null,
@@ -37,16 +38,16 @@ class ApplicantDocumentFactory extends Factory
 
     public function pending(): static
     {
-        return $this->state(['status' => 'pending']);
+        return $this->state(['status' => DocumentStatus::Pending]);
     }
 
     public function submitted(): static
     {
-        return $this->state(['status' => 'submitted', 'submitted_at' => now()]);
+        return $this->state(['status' => DocumentStatus::Submitted, 'submitted_at' => now()]);
     }
 
     public function approved(): static
     {
-        return $this->state(['status' => 'approved', 'submitted_at' => now(), 'approved_at' => now()]);
+        return $this->state(['status' => DocumentStatus::Approved, 'submitted_at' => now(), 'approved_at' => now()]);
     }
 }

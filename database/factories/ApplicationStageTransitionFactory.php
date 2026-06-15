@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\TransitionType;
 use App\Models\Application;
 use App\Models\ApplicationStageTransition;
 use App\Models\WorkflowStage;
@@ -21,7 +22,7 @@ class ApplicationStageTransitionFactory extends Factory
             'from_stage_id'   => null,
             'to_stage_id'     => WorkflowStage::factory(),
             'changed_by'      => null,
-            'transition_type' => 'manual',
+            'transition_type' => TransitionType::Manual,
             'reason'          => null,
             'metadata'        => null,
             'created_at'      => now(),
@@ -35,6 +36,6 @@ class ApplicationStageTransitionFactory extends Factory
 
     public function automatic(): static
     {
-        return $this->state(['transition_type' => 'automatic']);
+        return $this->state(['transition_type' => TransitionType::Automatic]);
     }
 }

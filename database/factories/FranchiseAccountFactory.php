@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\AccountStatus;
 use App\Models\FranchiseAccount;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -14,12 +15,12 @@ class FranchiseAccountFactory extends Factory
     {
         return [
             'name' => fake()->company(),
-            'status' => 'active',
+            'status' => AccountStatus::Active,
         ];
     }
 
     public function inactive(): static
     {
-        return $this->state(['status' => 'inactive']);
+        return $this->state(['status' => AccountStatus::Inactive]);
     }
 }

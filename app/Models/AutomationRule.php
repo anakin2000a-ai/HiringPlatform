@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AutomationTrigger;
 use Database\Factories\AutomationRuleFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -32,6 +33,7 @@ class AutomationRule extends Model
             'actions'    => 'array',
             'priority'   => 'integer',
             'is_active'  => 'boolean',
+            'trigger'    => AutomationTrigger::class,
         ];
     }
 

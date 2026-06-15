@@ -60,7 +60,8 @@ class WorkflowService
         if (array_key_exists('status', $data)) {
             $newStatus = $data['status'];
 
-            if ($workflow->status === 'archived' && $newStatus !== 'archived') {
+            $currentStatus = $workflow->status instanceof \BackedEnum ? $workflow->status->value : $workflow->status;
+            if ($currentStatus === 'archived' && $newStatus !== 'archived') {
                 throw ValidationException::withMessages([
                     'status' => ['Cannot change the status of an archived workflow.'],
                 ]);

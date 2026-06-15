@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\ApplicationStatus;
 use App\Models\Applicant;
 use App\Models\Application;
 use App\Models\JobOpening;
@@ -21,7 +22,7 @@ class ApplicationFactory extends Factory
             'applicant_id' => Applicant::factory(),
             'job_opening_id' => JobOpening::factory(),
             'current_stage_id' => null,
-            'status' => 'active',
+            'status' => ApplicationStatus::Active,
             'score' => null,
             'applied_at' => now(),
             'rejected_at' => null,
@@ -33,7 +34,7 @@ class ApplicationFactory extends Factory
     public function rejected(): static
     {
         return $this->state([
-            'status' => 'rejected',
+            'status'      => ApplicationStatus::Rejected,
             'rejected_at' => now(),
         ]);
     }
@@ -41,7 +42,7 @@ class ApplicationFactory extends Factory
     public function hired(): static
     {
         return $this->state([
-            'status' => 'hired',
+            'status'   => ApplicationStatus::Hired,
             'hired_at' => now(),
         ]);
     }

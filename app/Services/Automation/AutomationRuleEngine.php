@@ -2,6 +2,7 @@
 
 namespace App\Services\Automation;
 
+use App\Enums\DocumentStatus;
 use App\Models\Application;
 use App\Models\AutomationRule;
 use App\Models\ApplicantDocument;
@@ -102,7 +103,7 @@ class AutomationRuleEngine
         foreach ($application->applicantDocuments as $doc) {
             $docType = $doc->documentTemplate?->document_type;
             if ($docType !== null) {
-                $documents[$docType] = ['status' => $doc->status];
+                $documents[$docType] = ['status' => $doc->status instanceof \BackedEnum ? $doc->status->value : $doc->status];
             }
         }
 
@@ -111,7 +112,7 @@ class AutomationRuleEngine
         );
 
         $allRequiredApproved = $requiredDocs->isNotEmpty()
-            && $requiredDocs->every(fn ($doc) => $doc->status === 'approved');
+            && $requiredDocs->every(fn ($doc) => $doc->status === DocumentStatus::Approved);
 
         $documents['all_required'] = [
             'status' => $allRequiredApproved ? 'approved' : 'pending',
@@ -123,13 +124,15 @@ class AutomationRuleEngine
                 'phone' => $application->applicant?->phone,
             ],
             'application' => [
-                'status' => $application->status,
+                'status' => $application->status instanceof \BackedEnum ? $application->status->value : $application->status,
                 'score'  => $application->score,
             ],
             'current_stage' => [
                 // 'slug' maps to name — no slug column on workflow_stages in current schema
                 'slug'       => $application->currentStage?->name,
-                'stage_type' => $application->currentStage?->stage_type,
+                'stage_type' => $application->currentStage?->stage_type instanceof \BackedEnum
+                    ? $application->currentStage->stage_type->value
+                    : $application->currentStage?->stage_type,
             ],
             'answers'   => $answers,
             'documents' => $documents,

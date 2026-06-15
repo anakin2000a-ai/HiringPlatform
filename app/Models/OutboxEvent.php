@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\OutboxEventStatus;
 use Illuminate\Database\Eloquent\Model;
 
 class OutboxEvent extends Model
@@ -26,6 +27,7 @@ class OutboxEvent extends Model
             'published_at' => 'datetime',
             'failed_at'    => 'datetime',
             'available_at' => 'datetime',
+            'status'       => OutboxEventStatus::class,
         ];
     }
 }

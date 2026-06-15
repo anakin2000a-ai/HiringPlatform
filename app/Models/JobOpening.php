@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\EmploymentType;
+use App\Enums\JobOpeningStatus;
 use Database\Factories\JobOpeningFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -28,8 +30,10 @@ class JobOpening extends Model
     protected function casts(): array
     {
         return [
-            'published_at' => 'datetime',
-            'closed_at' => 'datetime',
+            'published_at'    => 'datetime',
+            'closed_at'       => 'datetime',
+            'status'          => JobOpeningStatus::class,
+            'employment_type' => EmploymentType::class,
         ];
     }
 
@@ -55,16 +59,16 @@ class JobOpening extends Model
 
     public function isDraft(): bool
     {
-        return $this->status === 'draft';
+        return $this->status === JobOpeningStatus::Draft;
     }
 
     public function isPublished(): bool
     {
-        return $this->status === 'published';
+        return $this->status === JobOpeningStatus::Published;
     }
 
     public function isClosed(): bool
     {
-        return $this->status === 'closed';
+        return $this->status === JobOpeningStatus::Closed;
     }
 }

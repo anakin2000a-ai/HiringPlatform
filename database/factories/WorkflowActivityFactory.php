@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Enums\ActorType;
+use App\Enums\WorkflowEventType;
 use App\Models\Application;
 use App\Models\Store;
 use App\Models\WorkflowActivity;
@@ -22,7 +24,7 @@ class WorkflowActivityFactory extends Factory
             'workflow_stage_id' => null,
             'actor_type'       => null,
             'actor_id'         => null,
-            'event_type'       => 'stage_moved',
+            'event_type'       => WorkflowEventType::StageMoved->value,
             'old_value'        => null,
             'new_value'        => null,
             'metadata'         => null,
@@ -33,7 +35,7 @@ class WorkflowActivityFactory extends Factory
     public function byUser(int $userId): static
     {
         return $this->state([
-            'actor_type' => 'user',
+            'actor_type' => ActorType::User,
             'actor_id'   => $userId,
         ]);
     }

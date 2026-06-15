@@ -2,6 +2,7 @@
 
 namespace App\Services\Events;
 
+use App\Enums\InboxEventStatus;
 use App\Models\Applicant;
 use App\Models\InboxEvent;
 use App\Models\Store;
@@ -53,7 +54,7 @@ class InboxEventProcessor
         $existing = InboxEvent::where('event_id', $eventId)->first();
 
         // Already processed — skip idempotently.
-        if ($existing !== null && $existing->status === 'processed') {
+        if ($existing !== null && $existing->status === InboxEventStatus::Processed) {
             return $existing;
         }
 
@@ -63,7 +64,7 @@ class InboxEventProcessor
             'subject'    => $subject,
             'event_type' => $envelope['event_type'] ?? null,
             'payload'    => $envelope,
-            'status'     => 'pending',
+            'status'     => InboxEventStatus::Pending,
             'attempts'   => 0,
         ]);
 
@@ -71,7 +72,7 @@ class InboxEventProcessor
             $this->dispatch($subject, $envelope);
 
             $inboxEvent->update([
-                'status'       => 'processed',
+                'status'       => InboxEventStatus::Processed,
                 'processed_at' => now(),
                 'last_error'   => null,
             ]);
@@ -80,7 +81,7 @@ class InboxEventProcessor
                 'attempts'   => $inboxEvent->attempts + 1,
                 'last_error' => $e->getMessage(),
                 'failed_at'  => now(),
-                'status'     => 'failed',
+                'status'     => InboxEventStatus::Failed,
             ]);
 
             throw $e;

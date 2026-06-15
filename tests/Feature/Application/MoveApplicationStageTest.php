@@ -181,7 +181,7 @@ class MoveApplicationStageTest extends TestCase
             ->assertOk();
 
         $transition = ApplicationStageTransition::where('application_id', $application->id)->first();
-        $this->assertEquals('manual', $transition->transition_type);
+        $this->assertEquals('manual', $transition->transition_type instanceof \BackedEnum ? $transition->transition_type->value : $transition->transition_type);
     }
 
     public function test_transition_created_at_is_set(): void
@@ -213,7 +213,7 @@ class MoveApplicationStageTest extends TestCase
             ->assertJsonPath('data.status', 'hired');
 
         $fresh = $application->fresh();
-        $this->assertEquals('hired', $fresh->status);
+        $this->assertEquals('hired', $fresh->status instanceof \BackedEnum ? $fresh->status->value : $fresh->status);
         $this->assertNotNull($fresh->hired_at);
     }
 
@@ -228,7 +228,7 @@ class MoveApplicationStageTest extends TestCase
             ->assertJsonPath('data.status', 'rejected');
 
         $fresh = $application->fresh();
-        $this->assertEquals('rejected', $fresh->status);
+        $this->assertEquals('rejected', $fresh->status instanceof \BackedEnum ? $fresh->status->value : $fresh->status);
         $this->assertNotNull($fresh->rejected_at);
     }
 
@@ -417,7 +417,7 @@ class MoveApplicationStageTest extends TestCase
 
         $event = OutboxEvent::first();
         $this->assertEquals('hiring.application.stage_changed', $event->event_type);
-        $this->assertEquals('pending', $event->status);
+        $this->assertEquals('pending', $event->status instanceof \BackedEnum ? $event->status->value : $event->status);
         $this->assertEquals($application->id, $event->payload['application_id']);
         $this->assertEquals($applied->id, $event->payload['from_stage_id']);
         $this->assertEquals($screening->id, $event->payload['to_stage_id']);

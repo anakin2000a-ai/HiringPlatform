@@ -51,7 +51,7 @@ class OutboxPublisherTest extends TestCase
         $this->assertSame(0, $result['retried']);
 
         $event->refresh();
-        $this->assertSame('published', $event->status);
+        $this->assertSame('published', $event->status instanceof \BackedEnum ? $event->status->value : $event->status);
     }
 
     public function test_published_at_is_set_on_success(): void
@@ -77,7 +77,7 @@ class OutboxPublisherTest extends TestCase
         $this->service($publisher)->run();
 
         $event->refresh();
-        $this->assertSame('published', $event->status);
+        $this->assertSame('published', $event->status instanceof \BackedEnum ? $event->status->value : $event->status);
         $this->assertNull($event->failed_at);
         $this->assertNull($event->last_error);
     }
@@ -108,7 +108,7 @@ class OutboxPublisherTest extends TestCase
         $this->service($publisher)->run(maxAttempts: 5);
 
         $event->refresh();
-        $this->assertSame('pending', $event->status);
+        $this->assertSame('pending', $event->status instanceof \BackedEnum ? $event->status->value : $event->status);
         $this->assertNotNull($event->available_at);
         $this->assertTrue($event->available_at->isFuture());
     }
@@ -126,7 +126,7 @@ class OutboxPublisherTest extends TestCase
         $this->assertSame(1, $result['failed']);
 
         $event->refresh();
-        $this->assertSame('failed', $event->status);
+        $this->assertSame('failed', $event->status instanceof \BackedEnum ? $event->status->value : $event->status);
         $this->assertNotNull($event->failed_at);
         $this->assertSame('final failure', $event->last_error);
     }
@@ -146,7 +146,7 @@ class OutboxPublisherTest extends TestCase
         $this->assertEmpty($publisher->published());
 
         $event->refresh();
-        $this->assertSame('pending', $event->status);
+        $this->assertSame('pending', $event->status instanceof \BackedEnum ? $event->status->value : $event->status);
     }
 
     // -----------------------------------------------------------------------

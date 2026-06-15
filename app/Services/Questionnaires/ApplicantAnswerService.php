@@ -2,6 +2,7 @@
 
 namespace App\Services\Questionnaires;
 
+use App\Enums\OutboxEventStatus;
 use App\Models\ApplicantAnswer;
 use App\Models\Application;
 use App\Models\OutboxEvent;
@@ -103,7 +104,7 @@ class ApplicantAnswerService
                     'questionnaire_template_id' => $questionnaire->id,
                     'answer_count'              => $savedAnswers->count(),
                 ],
-                'status'   => 'pending',
+                'status'   => OutboxEventStatus::Pending,
                 'attempts' => 0,
             ]);
 

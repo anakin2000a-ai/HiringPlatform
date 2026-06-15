@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\DocumentStatus;
 use Database\Factories\ApplicantDocumentFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -47,6 +48,7 @@ public function getUrlAttribute(): ?string
             'approved_at'  => 'datetime',
             'rejected_at'  => 'datetime',
             'expires_at'   => 'datetime',
+            'status'       => DocumentStatus::class,
         ];
     }
 

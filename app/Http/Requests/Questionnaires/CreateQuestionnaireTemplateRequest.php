@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Questionnaires;
 
+use App\Enums\QuestionnaireStatus;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class CreateQuestionnaireTemplateRequest extends FormRequest
 {
@@ -11,7 +13,7 @@ class CreateQuestionnaireTemplateRequest extends FormRequest
         return [
             'name'                       => ['required', 'string', 'max:255'],
             'version'                    => ['sometimes', 'integer', 'min:1'],
-            'status'                     => ['sometimes', 'string', 'in:active,inactive'],
+            'status'                     => ['sometimes', 'string', Rule::enum(QuestionnaireStatus::class)],
             'questions'                  => ['sometimes', 'array'],
             'questions.*.question_key'   => ['required', 'string', 'max:100'],
             'questions.*.label'          => ['required', 'string', 'max:500'],

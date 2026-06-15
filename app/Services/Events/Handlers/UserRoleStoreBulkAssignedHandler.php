@@ -2,6 +2,7 @@
 
 namespace App\Services\Events\Handlers;
 
+use App\Enums\UserStatus;
 use App\Models\Store;
 use App\Models\User;
 use App\Models\UserStoreAccess;
@@ -60,7 +61,7 @@ class UserRoleStoreBulkAssignedHandler implements EventHandlerInterface
             foreach ($pairs as $pair) {
                 UserStoreAccess::firstOrCreate(
                     ['user_id' => $pair['user_id'], 'store_id' => $pair['store_id']],
-                    ['role' => $pair['role'], 'access_scope' => $pair['access_scope'], 'status' => 'active']
+                    ['role' => $pair['role'], 'access_scope' => $pair['access_scope'], 'status' => UserStatus::Active]
                 );
             }
         });

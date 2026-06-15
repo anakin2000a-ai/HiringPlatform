@@ -2,6 +2,7 @@
 
 namespace App\Services\Applications;
 
+use App\Enums\ApplicationStatus;
 use App\Models\Application;
 use App\Models\JobOpening;
 use App\Services\Automation\AutomationRuleEngine;
@@ -50,7 +51,7 @@ class CreateApplicationService
                 'applicant_id'     => $applicant->id,
                 'job_opening_id'   => $jobOpening->id,
                 'current_stage_id' => $initialStage->id,
-                'status'           => 'active',
+                'status'           => ApplicationStatus::Active,
                 'applied_at'       => now(),
             ]);
 

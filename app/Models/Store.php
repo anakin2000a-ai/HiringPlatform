@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\StoreStatus;
 use Database\Factories\StoreFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -25,6 +26,13 @@ class Store extends Model
      * Route model binding resolves Store by store_name instead of id.
      * All {store} parameters in routes accept a store_name value.
      */
+    protected function casts(): array
+    {
+        return [
+            'status' => StoreStatus::class,
+        ];
+    }
+
     public function getRouteKeyName(): string
     {
         return 'store_name';

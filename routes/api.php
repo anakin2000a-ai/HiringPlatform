@@ -34,11 +34,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
     // Authenticated business routes
     Route::middleware('auth:sanctum')->group(function (): void {
 
-        
- 
         // Phase 8: Stage document requirements (store resolved through stage->workflow->store)
-        // Route::get('workflow-stages/{stage}/document-requirements', [StageDocumentRequirementController::class, 'index']);
-        Route::post('workflow-stages/{stage}/document-requirements', [StageDocumentRequirementController::class, 'store']);
+         Route::post('workflow-stages/{stage}/document-requirements', [StageDocumentRequirementController::class, 'store']);
         // Route::get('stage-document-requirements/{requirement}', [StageDocumentRequirementController::class, 'show']);
         Route::patch('stage-document-requirements/{requirement}', [StageDocumentRequirementController::class, 'update']);
         Route::delete('stage-document-requirements/{requirement}', [StageDocumentRequirementController::class, 'destroy']);
@@ -97,7 +94,6 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::patch('stores/{store}/questionnaires/{questionnaire}', [QuestionnaireTemplateController::class, 'update']);
             Route::delete('stores/{store}/questionnaires/{questionnaire}', [QuestionnaireTemplateController::class, 'destroy']);
 
-            // Route::get('stores/{store}/questionnaires/{questionnaire}/questions', [QuestionnaireQuestionController::class, 'index']);
             Route::post('stores/{store}/questionnaires/{questionnaire}/questions', [QuestionnaireQuestionController::class, 'store']);
             Route::patch('stores/{store}/questionnaires/{questionnaire}/questions/{question}', [QuestionnaireQuestionController::class, 'update']);
             Route::delete('stores/{store}/questionnaires/{questionnaire}/questions/{question}', [QuestionnaireQuestionController::class, 'destroy']);

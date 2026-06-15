@@ -14,7 +14,7 @@ class WorkflowActivityResource extends JsonResource
             'application_id'   => $this->application_id,
             'store_id'         => $this->store_id,
             'workflow_stage_id' => $this->workflow_stage_id,
-            'actor_type'       => $this->actor_type,
+            'actor_type'       => $this->actor_type?->value,
             'actor_id'         => $this->actor_id,
             'event_type'       => $this->event_type,
             'old_value'        => $this->old_value,

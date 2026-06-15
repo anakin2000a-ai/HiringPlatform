@@ -353,11 +353,16 @@ class NatsClientTest extends TestCase
         $this->assertStringNotContainsString('->parked_at', $source,
             'JetStreamConsumer must not access ->parked_at — inbox_events has no such column.');
 
-        // The status column (not a parked_at column) is used to represent parked state
-        $this->assertStringContainsString("status === 'parked'", $source,
-            'JetStreamConsumer must use status === "parked" instead of parked_at.');
-        $this->assertStringContainsString("status    = 'parked'", $source,
-            'JetStreamConsumer must set status = "parked" on max attempts, not parked_at.');
+        // The status column (not a parked_at column) is used to represent parked state.
+        // Code now uses InboxEventStatus::Parked enum constant instead of the raw string.
+        $this->assertTrue(
+            str_contains($source, "status === 'parked'") || str_contains($source, 'InboxEventStatus::Parked'),
+            'JetStreamConsumer must use status === "parked" or InboxEventStatus::Parked instead of parked_at.'
+        );
+        $this->assertTrue(
+            str_contains($source, "status    = 'parked'") || str_contains($source, 'InboxEventStatus::Parked'),
+            'JetStreamConsumer must set status to parked on max attempts, not parked_at.'
+        );
     }
 
     public function test_jetstream_consumer_source_does_not_insert_source_stream_consumer_columns(): void

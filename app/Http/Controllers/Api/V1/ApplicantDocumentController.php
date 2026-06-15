@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\DocumentStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Documents\InitiateApplicantDocumentRequest;
 use App\Http\Requests\Documents\RejectApplicantDocumentRequest;
@@ -16,6 +17,7 @@ use App\Services\AccessControl\StoreAccessService;
 use App\Services\Documents\ApplicantDocumentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ApplicantDocumentController extends Controller
 {
@@ -35,7 +37,7 @@ class ApplicantDocumentController extends Controller
 
         $request->validate([
             'per_page'             => ['sometimes', 'integer', 'min:1', 'max:100'],
-            'status'               => ['sometimes', 'string', 'in:pending,submitted,signed,approved,rejected'],
+            'status'               => ['sometimes', 'string', Rule::enum(DocumentStatus::class)],
             'workflow_stage_id'    => ['sometimes', 'integer'],
             'document_template_id' => ['sometimes', 'integer'],
         ]);

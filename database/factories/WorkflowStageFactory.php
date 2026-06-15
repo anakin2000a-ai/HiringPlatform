@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\StageType;
 use App\Models\HiringWorkflow;
 use App\Models\WorkflowStage;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -20,7 +21,7 @@ class WorkflowStageFactory extends Factory
         return [
             'hiring_workflow_id' => HiringWorkflow::factory(),
             'name' => $this->faker->unique()->word() . ' Stage',
-            'stage_type' => $this->faker->randomElement(['application', 'screening', 'interview', 'documents', 'approval', 'onboarding', 'hired', 'rejected', 'custom']),
+            'stage_type' => $this->faker->randomElement(StageType::cases()),
             'position' => $this->faker->unique()->numberBetween(1, 100),
             'is_initial' => false,
             'is_terminal' => false,
@@ -33,8 +34,8 @@ class WorkflowStageFactory extends Factory
     {
         return $this->state([
             'is_initial' => true,
-            'stage_type' => 'application',
-            'position' => 1,
+            'stage_type' => StageType::Application,
+            'position'   => 1,
         ]);
     }
 
@@ -42,7 +43,7 @@ class WorkflowStageFactory extends Factory
     {
         return $this->state([
             'is_terminal' => true,
-            'stage_type' => 'hired',
+            'stage_type'  => StageType::Hired,
         ]);
     }
 

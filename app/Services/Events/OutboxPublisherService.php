@@ -2,6 +2,7 @@
 
 namespace App\Services\Events;
 
+use App\Enums\OutboxEventStatus;
 use App\Models\OutboxEvent;
 use Illuminate\Support\Facades\DB;
 
@@ -31,7 +32,7 @@ class OutboxPublisherService
 
         // Collect candidate IDs first (no lock yet) so we can process each in
         // its own short transaction, keeping lock duration minimal.
-        $candidateIds = OutboxEvent::where('status', 'pending')
+        $candidateIds = OutboxEvent::where('status', OutboxEventStatus::Pending)
             ->where(function ($q): void {
                 $q->whereNull('available_at')
                   ->orWhere('available_at', '<=', now());
@@ -44,7 +45,7 @@ class OutboxPublisherService
             $outcome = DB::transaction(function () use ($id, $maxAttempts): string {
                 // Re-fetch with a row lock; skip if another worker already claimed it.
                 $event = OutboxEvent::where('id', $id)
-                    ->where('status', 'pending')
+                    ->where('status', OutboxEventStatus::Pending)
                     ->lockForUpdate()
                     ->first();
 
@@ -56,7 +57,7 @@ class OutboxPublisherService
                     $this->publisher->publish($event->subject, $event->payload);
 
                     $event->update([
-                        'status'       => 'published',
+                        'status'       => OutboxEventStatus::Published,
                         'published_at' => now(),
                         'failed_at'    => null,
                         'last_error'   => null,
@@ -72,7 +73,7 @@ class OutboxPublisherService
                     ];
 
                     if ($attempts >= $maxAttempts) {
-                        $updates['status']    = 'failed';
+                        $updates['status']    = OutboxEventStatus::Failed;
                         $updates['failed_at'] = now();
                         $event->update($updates);
 

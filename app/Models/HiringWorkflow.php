@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\WorkflowStatus;
 use Database\Factories\HiringWorkflowFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -29,7 +30,8 @@ class HiringWorkflow extends Model
     {
         return [
             'published_at' => 'datetime',
-            'archived_at' => 'datetime',
+            'archived_at'  => 'datetime',
+            'status'       => WorkflowStatus::class,
         ];
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Services\Events\Handlers;
 
+use App\Enums\UserStatus;
 use App\Models\User;
 use App\Services\Events\EventHandlerInterface;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +34,7 @@ class UserDeletedHandler implements EventHandlerInterface
         }
 
         DB::transaction(static function () use ($user): void {
-            $user->update(['status' => 'inactive']);
+            $user->update(['status' => UserStatus::Inactive]);
         });
     }
 }

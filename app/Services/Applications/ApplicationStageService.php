@@ -2,6 +2,12 @@
 
 namespace App\Services\Applications;
 
+use App\Enums\ActorType;
+use App\Enums\ApplicationStatus;
+use App\Enums\OutboxEventStatus;
+use App\Enums\StageType;
+use App\Enums\TransitionType;
+use App\Enums\WorkflowEventType;
 use App\Jobs\PublishHiringOutboxEventJob;
 use App\Models\Application;
 use App\Models\ApplicationStageTransition;
@@ -26,7 +32,7 @@ class ApplicationStageService
         int $toStageId,
         ?string $reason,
         ?User $actor,
-        string $transitionType = 'manual',
+        TransitionType $transitionType = TransitionType::Manual,
     ): Application {
         $application->load(['jobOpening.hiringWorkflow', 'currentStage']);
 
@@ -43,7 +49,7 @@ class ApplicationStageService
         }
 
         $fromStageId   = $application->current_stage_id;
-        $allowedColumn = $transitionType === 'automatic' ? 'is_automatic_allowed' : 'is_manual_allowed';
+        $allowedColumn = $transitionType === TransitionType::Automatic ? 'is_automatic_allowed' : 'is_manual_allowed';
 
         $transition = WorkflowStageTransition::where('hiring_workflow_id', $workflow->id)
             ->where('from_stage_id', $fromStageId)
@@ -61,18 +67,18 @@ class ApplicationStageService
             $updates = ['current_stage_id' => $toStage->id];
 
             if ($toStage->is_terminal) {
-                if ($toStage->stage_type === 'hired' && $application->hired_at === null) {
-                    $updates['status']   = 'hired';
+                if ($toStage->stage_type === StageType::Hired && $application->hired_at === null) {
+                    $updates['status']   = ApplicationStatus::Hired;
                     $updates['hired_at'] = now();
-                } elseif ($toStage->stage_type === 'rejected' && $application->rejected_at === null) {
-                    $updates['status']      = 'rejected';
+                } elseif ($toStage->stage_type === StageType::Rejected && $application->rejected_at === null) {
+                    $updates['status']      = ApplicationStatus::Rejected;
                     $updates['rejected_at'] = now();
                 }
             }
 
             $application->update($updates);
 
-            $actorType = $transitionType === 'automatic' ? 'automation' : 'user';
+            $actorType = $transitionType === TransitionType::Automatic ? ActorType::Automation : ActorType::User;
 
             ApplicationStageTransition::create([
                 'application_id'  => $application->id,
@@ -90,7 +96,7 @@ class ApplicationStageService
             $this->activityService->record(
                 applicationId: $application->id,
                 storeId: $storeId,
-                eventType: 'stage_moved',
+                eventType: WorkflowEventType::StageMoved,
                 workflowStageId: $toStage->id,
                 actorType: $actorType,
                 actorId: $actor?->id,
@@ -111,16 +117,16 @@ class ApplicationStageService
                     'transition_type' => $transitionType,
                     'status'          => $application->status,
                 ],
-                'status'   => 'pending',
+                'status'   => OutboxEventStatus::Pending,
                 'attempts' => 0,
             ]);
 
             // Emit a versioned business event when the application reaches a NEW terminal outcome.
             // Duplicate guard: only emit if this move actually set the terminal timestamp.
-            if ($toStage->is_terminal && isset($updates[$toStage->stage_type . '_at'])) {
+            if ($toStage->is_terminal && isset($updates[$toStage->stage_type->value . '_at'])) {
                 $application->loadMissing(['applicant', 'jobOpening.store']);
 
-                $decision  = $toStage->stage_type; // 'hired' or 'rejected'
+                $decision  = $toStage->stage_type->value; // 'hired' or 'rejected'
                 $applicant = $application->applicant;
                 $job       = $application->jobOpening;
                 $store     = $job?->store;

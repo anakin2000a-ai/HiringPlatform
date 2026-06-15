@@ -71,7 +71,7 @@ class StoreSyncFinalTest extends TestCase
         );
 
         $store->refresh();
-        $this->assertSame('active', $store->status);
+        $this->assertSame('active', $store->status instanceof \BackedEnum ? $store->status->value : $store->status);
         $this->assertSame('Reactivated Name', $store->store_name);
     }
 
@@ -109,7 +109,7 @@ class StoreSyncFinalTest extends TestCase
         );
 
         $store->refresh();
-        $this->assertSame('inactive', $store->status);
+        $this->assertSame('inactive', $store->status instanceof \BackedEnum ? $store->status->value : $store->status);
     }
 
     public function test_store_updated_ignores_arbitrary_status_values(): void
@@ -126,7 +126,7 @@ class StoreSyncFinalTest extends TestCase
         );
 
         $store->refresh();
-        $this->assertSame('active', $store->status);
+        $this->assertSame('active', $store->status instanceof \BackedEnum ? $store->status->value : $store->status);
     }
 
     // -----------------------------------------------------------------------
@@ -144,7 +144,7 @@ class StoreSyncFinalTest extends TestCase
         );
 
         $store->refresh();
-        $this->assertSame('inactive', $store->status);
+        $this->assertSame('inactive', $store->status instanceof \BackedEnum ? $store->status->value : $store->status);
     }
 
     public function test_store_deleted_does_not_physically_delete_the_store(): void
@@ -167,7 +167,7 @@ class StoreSyncFinalTest extends TestCase
             $this->envelope('auth.v1.store.deleted', ['id' => 999999])
         );
 
-        $this->assertSame('processed', $result->status);
+        $this->assertSame('processed', $result->status instanceof \BackedEnum ? $result->status->value : $result->status);
         $this->assertDatabaseCount('stores', 0);
     }
 
@@ -181,14 +181,14 @@ class StoreSyncFinalTest extends TestCase
         $this->processor()->process('auth.v1.store.deleted', $envelope);
         $result2 = $this->processor()->process('auth.v1.store.deleted', $envelope);
 
-        $this->assertSame('processed', $result2->status);
+        $this->assertSame('processed', $result2->status instanceof \BackedEnum ? $result2->status->value : $result2->status);
         $this->assertSame(
             1,
             \App\Models\InboxEvent::where('event_id', $envelope['event_id'])->count()
         );
         // Status remains inactive from first processing; second call was a no-op
         $store->refresh();
-        $this->assertSame('inactive', $store->status);
+        $this->assertSame('inactive', $store->status instanceof \BackedEnum ? $store->status->value : $store->status);
     }
 
     // -----------------------------------------------------------------------

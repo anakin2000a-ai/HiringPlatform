@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\UserStoreAccess;
 use App\Models\WorkflowStage;
 use App\Models\WorkflowStageTransition;
+use App\Enums\TransitionType;
 use App\Services\Applications\ApplicationStageService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -300,7 +301,7 @@ class ApplicationStageServiceOutboundTest extends TestCase
 
         // Automation move (transitionType = automatic)
         $application->refresh();
-        $this->service()->move($application, $hired->id, null, $admin, 'automatic');
+        $this->service()->move($application, $hired->id, null, $admin, TransitionType::Automatic);
 
         $this->assertDatabaseHas('application_stage_transitions', [
             'application_id'  => $application->id,

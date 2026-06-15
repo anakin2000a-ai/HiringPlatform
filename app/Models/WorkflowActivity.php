@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ActorType;
 use Database\Factories\WorkflowActivityFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -34,6 +35,7 @@ class WorkflowActivity extends Model
             'new_value'  => 'array',
             'metadata'   => 'array',
             'created_at' => 'datetime',
+            'actor_type' => ActorType::class,
         ];
     }
 

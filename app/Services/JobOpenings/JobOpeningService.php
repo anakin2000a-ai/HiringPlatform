@@ -2,6 +2,7 @@
 
 namespace App\Services\JobOpenings;
 
+use App\Enums\JobOpeningStatus;
 use App\Models\JobOpening;
 use App\Models\Store;
 use App\Models\User;
@@ -18,7 +19,7 @@ class JobOpeningService
             'description' => $data['description'] ?? null,
             'employment_type' => $data['employment_type'] ?? null,
             'openings_count' => $data['openings_count'] ?? 1,
-            'status' => 'draft',
+            'status' => JobOpeningStatus::Draft,
             'created_by' => $createdBy->id,
         ]);
     }
@@ -39,7 +40,7 @@ class JobOpeningService
         }
 
         $jobOpening->update([
-            'status' => 'published',
+            'status'       => JobOpeningStatus::Published,
             'published_at' => now(),
         ]);
 
@@ -55,7 +56,7 @@ class JobOpeningService
         }
 
         $jobOpening->update([
-            'status' => 'closed',
+            'status'    => JobOpeningStatus::Closed,
             'closed_at' => now(),
         ]);
 

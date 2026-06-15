@@ -14,7 +14,7 @@ class QuestionnaireTemplateResource extends JsonResource
             'store_id'   => $this->store_id,
             'name'       => $this->name,
             'version'    => $this->version,
-            'status'     => $this->status,
+            'status'     => $this->status?->value,
             'created_by' => $this->created_by,
             'questions'  => QuestionnaireQuestionResource::collection($this->whenLoaded('questions')),
             'created_at' => $this->created_at,

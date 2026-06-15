@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Applications;
 
+use App\Enums\ApplicationStatus;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateApplicationRequest extends FormRequest
 {
@@ -14,7 +16,7 @@ class UpdateApplicationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['sometimes', 'string', 'in:active,rejected,hired,withdrawn'],
+            'status' => ['sometimes', 'string', Rule::enum(ApplicationStatus::class)],
             'score' => ['sometimes', 'nullable', 'integer', 'min:0'],
         ];
     }

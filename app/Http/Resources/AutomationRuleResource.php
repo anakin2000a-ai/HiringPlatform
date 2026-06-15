@@ -15,7 +15,7 @@ class AutomationRuleResource extends JsonResource
             'hiring_workflow_id'  => $this->hiring_workflow_id,
             'workflow_stage_id'   => $this->workflow_stage_id,
             'name'                => $this->name,
-            'trigger'             => $this->trigger,
+            'trigger'             => $this->trigger?->value,
             'conditions'          => $this->conditions,
             'actions'             => $this->actions,
             'priority'            => $this->priority,

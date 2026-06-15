@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\QuestionType;
 use Database\Factories\QuestionnaireQuestionFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -32,6 +33,7 @@ class QuestionnaireQuestion extends Model
             'validation_rules' => 'array',
             'visibility_rules' => 'array',
             'is_required'      => 'boolean',
+            'type'             => QuestionType::class,
         ];
     }
 

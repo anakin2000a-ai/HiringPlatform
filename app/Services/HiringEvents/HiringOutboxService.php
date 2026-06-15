@@ -2,6 +2,7 @@
 
 namespace App\Services\HiringEvents;
 
+use App\Enums\OutboxEventStatus;
 use App\Models\OutboxEvent;
 
 class HiringOutboxService
@@ -13,7 +14,7 @@ class HiringOutboxService
             'event_type' => $subject,
             'subject'    => $subject,
             'payload'    => $payload,
-            'status'     => 'pending',
+            'status'     => OutboxEventStatus::Pending,
             'attempts'   => 0,
         ]);
     }

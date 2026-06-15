@@ -14,7 +14,7 @@ class ApplicationResource extends JsonResource
             'applicant_id' => $this->applicant_id,
             'job_opening_id' => $this->job_opening_id,
             'current_stage_id' => $this->current_stage_id,
-            'status' => $this->status,
+            'status' => $this->status?->value,
             'score' => $this->score,
             'applied_at' => $this->applied_at,
             'rejected_at' => $this->rejected_at,

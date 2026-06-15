@@ -14,7 +14,7 @@ class QuestionnaireQuestionResource extends JsonResource
             'questionnaire_template_id'  => $this->questionnaire_template_id,
             'question_key'               => $this->question_key,
             'label'                      => $this->label,
-            'type'                       => $this->type,
+            'type'                       => $this->type?->value,
             'options'                    => $this->options,
             'validation_rules'           => $this->validation_rules,
             'visibility_rules'           => $this->visibility_rules,

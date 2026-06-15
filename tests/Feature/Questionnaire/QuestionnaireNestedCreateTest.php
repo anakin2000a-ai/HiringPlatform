@@ -104,12 +104,12 @@ class QuestionnaireNestedCreateTest extends TestCase
 
         $q1 = $questionnaire->questions()->where('question_key', 'experience')->first();
         $this->assertNotNull($q1);
-        $this->assertSame('boolean', $q1->type);
+        $this->assertSame('boolean', $q1->type instanceof \BackedEnum ? $q1->type->value : $q1->type);
         $this->assertTrue((bool) $q1->is_required);
 
         $q2 = $questionnaire->questions()->where('question_key', 'motivation')->first();
         $this->assertNotNull($q2);
-        $this->assertSame('text', $q2->type);
+        $this->assertSame('text', $q2->type instanceof \BackedEnum ? $q2->type->value : $q2->type);
     }
 
     public function test_response_includes_questions_when_provided(): void

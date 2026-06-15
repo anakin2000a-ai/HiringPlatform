@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Workflows;
 
+use App\Enums\StageType;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class CreateWorkflowStageRequest extends FormRequest
 {
@@ -15,7 +17,7 @@ class CreateWorkflowStageRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'stage_type' => ['required', 'string', 'in:application,screening,interview,documents,approval,onboarding,hired,rejected,custom'],
+            'stage_type' => ['required', 'string', Rule::enum(StageType::class)],
             'position' => ['required', 'integer', 'min:1'],
             'is_initial' => ['sometimes', 'boolean'],
             'is_terminal' => ['sometimes', 'boolean'],
