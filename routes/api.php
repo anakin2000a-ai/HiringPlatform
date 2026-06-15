@@ -35,8 +35,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::middleware('auth:sanctum')->group(function (): void {
 
         // Phase 8: Stage document requirements (store resolved through stage->workflow->store)
-         Route::post('workflow-stages/{stage}/document-requirements', [StageDocumentRequirementController::class, 'store']);
-        // Route::get('stage-document-requirements/{requirement}', [StageDocumentRequirementController::class, 'show']);
+         Route::get('stage-document-requirements/{requirement}', [StageDocumentRequirementController::class, 'show']);
         Route::patch('stage-document-requirements/{requirement}', [StageDocumentRequirementController::class, 'update']);
         Route::delete('stage-document-requirements/{requirement}', [StageDocumentRequirementController::class, 'destroy']);
 
@@ -59,8 +58,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::patch('stores/{store}/workflows/{workflow}', [WorkflowController::class, 'update']);
             Route::delete('stores/{store}/workflows/{workflow}', [WorkflowController::class, 'destroy']);
 
-            // Route::get('stores/{store}/workflows/{workflow}/stages', [WorkflowStageController::class, 'index']);
-            Route::post('stores/{store}/workflows/{workflow}/stages', [WorkflowStageController::class, 'store']);
+             Route::post('stores/{store}/workflows/{workflow}/stages', [WorkflowStageController::class, 'store']);
             Route::patch('stores/{store}/workflows/{workflow}/stages/{stage}', [WorkflowStageController::class, 'update']);
             Route::delete('stores/{store}/workflows/{workflow}/stages/{stage}', [WorkflowStageController::class, 'destroy']);
 

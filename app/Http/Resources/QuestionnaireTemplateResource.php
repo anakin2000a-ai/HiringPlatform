@@ -16,9 +16,10 @@ class QuestionnaireTemplateResource extends JsonResource
             'version'    => $this->version,
             'status'     => $this->status?->value,
             'created_by' => $this->created_by,
-            'questions'  => QuestionnaireQuestionResource::collection($this->whenLoaded('questions')),
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'questions'         => QuestionnaireQuestionResource::collection($this->whenLoaded('questions')),
+            'stage_assignments' => StageQuestionnaireAssignmentResource::collection($this->whenLoaded('stageAssignments')),
+            'created_at'        => $this->created_at,
+            'updated_at'        => $this->updated_at,
         ];
     }
 }

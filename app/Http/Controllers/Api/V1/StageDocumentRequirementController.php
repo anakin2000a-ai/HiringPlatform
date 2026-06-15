@@ -23,26 +23,7 @@ class StageDocumentRequirementController extends Controller
 
  
 
-    public function store(CreateStageDocumentRequirementRequest $request, WorkflowStage $stage): JsonResponse
-    {
-        $stage->load('workflow');
-        $store = $stage->workflow->store;
-
-        if (! $this->storeAccessService->canAccessStore($request->user(), $store)) {
-            return ApiResponse::forbidden();
-        }
-
-        if (! $this->canManage($request, $store)) {
-            return ApiResponse::forbidden('You do not have access to this store.');
-        }
-
-        $requirement = $this->requirementService->create($stage, $request->validated());
-
-        return ApiResponse::created(
-            new StageDocumentRequirementResource($requirement->load('documentTemplate')),
-            'Stage document requirement created'
-        );
-    }
+ 
 
     public function show(Request $request, StageDocumentRequirement $requirement): JsonResponse
     {

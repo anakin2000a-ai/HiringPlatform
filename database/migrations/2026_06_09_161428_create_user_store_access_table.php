@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('store_id')->constrained()->cascadeOnDelete();
-            $table->string('role', 100)->default('viewer');
+            $table->string('role', 100)->nullable()->default('store_manager');
             $table->string('access_scope', 50)->default('store');
             $table->string('status', 50)->default('active');
             $table->timestamps();
