@@ -249,12 +249,7 @@ class JetStreamConsumer
  
 private function handleMessage($msg, string $streamName, string $durable): void
 {
-    Log::warning('DEBUG_NATS_HANDLE_MESSAGE_REACHED', [
-    'class' => __CLASS__,
-    'stream' => $streamName,
-    'durable' => $durable,
-    'msg_class' => is_object($msg) ? get_class($msg) : gettype($msg),
-]);
+    
     $msgSubject = $this->getMsgSubject($msg);
     $reply      = $this->getMsgReply($msg);
 
