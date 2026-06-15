@@ -6,11 +6,8 @@ use App\Http\Controllers\Api\V1\ApplicantDocumentController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\AutomationRuleController;
 use App\Http\Controllers\Api\V1\DocumentTemplateController;
-use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\StageDocumentRequirementController;
-use App\Http\Controllers\Api\V1\StoreController;
-use App\Http\Controllers\Api\V1\UserController;
-use App\Http\Controllers\Api\V1\ApplicationController;
+ use App\Http\Controllers\Api\V1\ApplicationController;
 use App\Http\Controllers\Api\V1\JobOpeningApplicationController;
 use App\Http\Controllers\Api\V1\JobOpeningController;
 use App\Http\Controllers\Api\V1\QuestionnaireQuestionController;
@@ -23,8 +20,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
-    Route::get('/health', [HealthController::class, 'index'])->name('health');
-
+ 
     // Phase 5: Public apply route — no auth required
     Route::post('stores/{store}/job-openings/{jobOpening}/apply', [JobOpeningApplicationController::class, 'apply']);
 
@@ -38,14 +34,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
     // Authenticated business routes
     Route::middleware('auth:sanctum')->group(function (): void {
 
-        // Users
-        // Route::apiResource('users', UserController::class)->only(['index', 'store', 'show']);
-        Route::apiResource('users', UserController::class)->only(['index']);
-
-        // Stores — collection routes (no store model in URL)
-        Route::get('stores', [StoreController::class, 'index']);
-        // Route::post('stores', [StoreController::class, 'store']);
-
+        
+ 
         // Phase 8: Stage document requirements (store resolved through stage->workflow->store)
         // Route::get('workflow-stages/{stage}/document-requirements', [StageDocumentRequirementController::class, 'index']);
         Route::post('workflow-stages/{stage}/document-requirements', [StageDocumentRequirementController::class, 'store']);
@@ -63,9 +53,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
         // Store instance routes — EnsureStoreAccess verifies user can access {store}
         Route::middleware('store.access')->group(function (): void {
-            Route::get('stores/{store}', [StoreController::class, 'show']);
-            Route::patch('stores/{store}', [StoreController::class, 'update']);
-            Route::delete('stores/{store}', [StoreController::class, 'destroy']);
+   
 
             // Phase 3: Workflow configuration
             Route::get('stores/{store}/workflows', [WorkflowController::class, 'index']);
