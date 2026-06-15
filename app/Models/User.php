@@ -23,16 +23,16 @@ class User extends Authenticatable
         'status',
     ];
 
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = [ 'remember_token'];
 
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password'          => 'hashed',
+       
             'status'            => UserStatus::class,
         ];
     }
+    
 
     public function storeAccesses(): HasMany
     {

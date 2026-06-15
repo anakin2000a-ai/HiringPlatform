@@ -45,7 +45,7 @@ class UserRoleStoreAssignedHandler implements EventHandlerInterface
 
         $role  = (isset($assignment['role']) && in_array($assignment['role'], self::ALLOWED_ROLES, true))
             ? $assignment['role']
-            : 'viewer';
+            : 'store_manager';
         $scope = (isset($assignment['access_scope']) && in_array($assignment['access_scope'], ['franchise', 'store'], true))
             ? $assignment['access_scope']
             : 'store';
