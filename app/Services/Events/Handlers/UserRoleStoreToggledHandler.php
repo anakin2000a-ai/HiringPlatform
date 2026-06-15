@@ -9,89 +9,107 @@ use App\Models\UserStoreAccess;
 use App\Services\Events\EventHandlerInterface;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
-
+use Illuminate\Support\Facades\Log;
 class UserRoleStoreToggledHandler implements EventHandlerInterface
 {
-    private const ALLOWED_ROLES = ['franchise_admin', 'store_manager', 'recruiter', 'viewer'];
-
     /**
      * Handle auth.v1.assignment.user_role_store.toggled.
      *
-     * Supports Shape A (data.assignment.{user_id, store_id, after_is_active, role, access_scope})
-     * and Shape B (data.{user_id, store_id, after_is_active, role, access_scope}).
+     * Uses only user_id and store_id.
      *
-     * Active state is modelled by row presence:
-     *   - after_is_active true  → ensure the row exists (create if missing)
-     *   - after_is_active false → ensure the row is absent (delete if present)
-     *
-     * role defaults to 'viewer', access_scope defaults to 'store' when absent.
+     * Local toggle behavior:
+     * - if row exists     => delete it
+     * - if row not exists => create it
      */
-    public function handle(array $data): void
+  
+   public function handle(array $data): void
     {
+        Log::info('UserRoleStoreToggledHandler received event', [
+            'payload' => $data,
+        ]);
+
+        if (isset($data['data']) && is_array($data['data'])) {
+            $data = $data['data'];
+        }
+
         $assignment = isset($data['assignment']) && is_array($data['assignment'])
             ? $data['assignment']
             : $data;
 
-        $userId  = $assignment['user_id']  ?? null;
+        $userId  = $assignment['user_id'] ?? null;
         $storeId = $assignment['store_id'] ?? null;
 
         if ($userId === null || $storeId === null) {
+            Log::warning('UserRoleStoreToggledHandler missing user_id or store_id', [
+                'assignment' => $assignment,
+            ]);
+
             return;
         }
-
-        $afterActive = $assignment['after_is_active'] ?? $assignment['is_active'] ?? null;
-        $isActive    = $afterActive !== null ? (bool) $afterActive : true;
 
         $userId  = (int) $userId;
         $storeId = (int) $storeId;
 
-        $role  = (isset($assignment['role']) && in_array($assignment['role'], self::ALLOWED_ROLES, true))
-            ? $assignment['role']
-            : 'viewer';
-        $scope = (isset($assignment['access_scope']) && in_array($assignment['access_scope'], ['franchise', 'store'], true))
-            ? $assignment['access_scope']
-            : 'store';
+        $afterActive = $assignment['after_is_active'] ?? null;
 
-        DB::transaction(function () use ($userId, $storeId, $isActive, $role, $scope): void {
-            $exists = UserStoreAccess::where('user_id', $userId)
+        if ($afterActive === null) {
+            Log::warning('UserRoleStoreToggledHandler missing after_is_active', [
+                'assignment' => $assignment,
+            ]);
+
+            return;
+        }
+
+        $newStatus = (bool) $afterActive
+            ? UserStatus::Active
+            : UserStatus::Inactive;
+
+        DB::transaction(function () use ($userId, $storeId, $newStatus): void {
+            $access = UserStoreAccess::where('user_id', $userId)
                 ->where('store_id', $storeId)
-                ->exists();
+                ->first();
 
-            if ($isActive) {
-                if ($exists) {
-                    return;
-                }
-
-                if (! User::where('id', $userId)->exists()) {
-                    throw new RuntimeException(
-                        "user_id {$userId} does not exist locally. " .
-                        'Retry after auth.v1.user.created is processed.'
-                    );
-                }
-
-                if (! Store::where('id', $storeId)->exists()) {
-                    throw new RuntimeException(
-                        "store_id {$storeId} does not exist locally. " .
-                        'Retry after auth.v1.store.created is processed.'
-                    );
-                }
-
-                UserStoreAccess::create([
-                    'user_id'      => $userId,
-                    'store_id'     => $storeId,
-                    'role'         => $role,
-                    'access_scope' => $scope,
-                    'status'       => UserStatus::Active,
+            if ($access) {
+                $access->update([
+                    'status' => $newStatus,
                 ]);
-            } else {
-                if (! $exists) {
-                    return;
-                }
 
-                UserStoreAccess::where('user_id', $userId)
-                    ->where('store_id', $storeId)
-                    ->delete();
+                Log::info('UserStoreAccess status updated', [
+                    'user_id' => $userId,
+                    'store_id' => $storeId,
+                    'status' => $newStatus,
+                ]);
+
+                return;
             }
+
+            if (! User::where('id', $userId)->exists()) {
+                throw new RuntimeException(
+                    "user_id {$userId} does not exist locally. " .
+                    'Retry after auth.v1.user.created is processed.'
+                );
+            }
+
+            if (! Store::where('id', $storeId)->exists()) {
+                throw new RuntimeException(
+                    "store_id {$storeId} does not exist locally. " .
+                    'Retry after auth.v1.store.created is processed.'
+                );
+            }
+
+            UserStoreAccess::create([
+                'user_id'      => $userId,
+                'store_id'     => $storeId,
+                'role'         => 'viewer',
+                'access_scope' => 'store',
+                'status'       => $newStatus,
+            ]);
+
+            Log::info('UserStoreAccess created from toggled event', [
+                'user_id' => $userId,
+                'store_id' => $storeId,
+                'status' => $newStatus,
+            ]);
         });
     }
 }

@@ -34,7 +34,7 @@ class UserDeletedHandler implements EventHandlerInterface
         }
 
         DB::transaction(static function () use ($user): void {
-            $user->update(['status' => UserStatus::Inactive]);
+            $user->delete();
         });
     }
 }

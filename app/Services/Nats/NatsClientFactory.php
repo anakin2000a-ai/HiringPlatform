@@ -39,3 +39,4 @@ class NatsClientFactory
         return new Client(new Configuration($opts));
     }
 }
+  
